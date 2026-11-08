@@ -205,6 +205,22 @@ describe('SEO of the built site', () => {
     expect(robots).toContain(`Sitemap: ${absolute('/sitemap.xml')}`);
   });
 
+  it('carries the Search Console tag once in the head of every page', () => {
+    for (const file of htmlFiles(DIST)) {
+      const tags = doc(file).querySelectorAll('meta[name="google-site-verification"]');
+      expect(tags, urlOf(file)).toHaveLength(1);
+      expect(tags[0]?.parentElement?.tagName, urlOf(file)).toBe('HEAD');
+      expect(tags[0]?.getAttribute('content'), urlOf(file)).toMatch(/^[\w-]{40,}$/);
+    }
+  });
+
+  it('serves one IndexNow key file whose content is its own name', () => {
+    const keys = readdirSync(DIST).filter((name) => /^[0-9a-f]{32}\.txt$/.test(name));
+    expect(keys).toHaveLength(1);
+    const key = keys[0] ?? '';
+    expect(readFileSync(join(DIST, key), 'utf8')).toBe(key.replace(/\.txt$/, ''));
+  });
+
   it('lists in llms.txt only pages that exist, and all of them', () => {
     const llms = readFileSync(join(DIST, 'llms.txt'), 'utf8');
     const urls = [...llms.matchAll(/\]\((https:\/\/promptwipe\.pages\.dev[^)]*)\)/g)].map((m) => m[1]);

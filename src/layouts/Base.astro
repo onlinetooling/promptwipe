@@ -16,6 +16,10 @@ interface Props {
   notFound?: boolean;
 }
 
+// Google Search Console ownership check (privacy page: "a site verification
+// tag in the page header"). Inert: it runs no code and loads nothing.
+const GOOGLE_SITE_VERIFICATION = 'XcaHeJySDA0mvB80e1SZLNwQRs7D0j8ajveliXW8W7c';
+
 const { lang, title, description, heading, notFound = false } = Astro.props;
 const path = Astro.url.pathname;
 const pair: RoutePair | undefined = notFound ? undefined : alternatesFor(path);
@@ -113,6 +117,7 @@ if (pair?.kind === 'guide') {
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="google-site-verification" content={GOOGLE_SITE_VERIFICATION} />
     {pair ? (
       <>
         <link rel="canonical" href={absolute(path)} />
