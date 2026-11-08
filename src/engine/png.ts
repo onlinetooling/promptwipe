@@ -1,7 +1,9 @@
 import { asciiBytes, be32, concat, crc32, decodeLatin1, indexOfNul, need, u32be } from './bytes';
 import { EngineError, malformed } from './errors';
 import { orientationTiff, readOrientation } from './exif';
-import { MAX_BLOCKS } from './limits';
+import { isIccProfile } from './icc';
+import { MAX_BLOCKS, MAX_ICC_BYTES } from './limits';
+import { inflateZlib } from './zlib';
 import type { Block, BlockKind, Structure } from './types';
 import type { Parsed } from './parsed';
 
@@ -46,13 +48,21 @@ const SINGLE: Record<string, string> = {
 const BEFORE_PLTE = new Set(['gAMA', 'sRGB', 'cHRM', 'iCCP', 'cICP']);
 export const ICCP_NAME = 'ICC Profile';
 
-/** A valid iCCP: 1-79 byte name, NUL, compression method 0, data. Returns the chunk data with the fixed name. */
+/**
+ * A valid iCCP: 1-79 byte name, NUL, compression method 0, then a zlib stream
+ * that ends exactly at the chunk end and holds one whole ICC profile, so no
+ * byte can ride along (security review 2026-11-08). Returns the chunk data
+ * with the fixed name.
+ */
 function iccpProfile(b: Uint8Array, c: PngChunk): { data: Uint8Array<ArrayBuffer>; rename: boolean } | null {
   const end = c.dataStart + c.length;
   const nul = indexOfNul(b, c.dataStart, Math.min(end, c.dataStart + 80));
   if (nul <= c.dataStart || nul + 2 >= end || b[nul + 1] !== 0) return null;
+  const compressed = b.subarray(nul + 2, end);
+  const profile = inflateZlib(compressed, MAX_ICC_BYTES);
+  if (!profile || !profile.complete || profile.end !== compressed.length || !isIccProfile(profile.bytes)) return null;
   const name = decodeLatin1(b.subarray(c.dataStart, nul));
-  return { data: concat([asciiBytes(ICCP_NAME), new Uint8Array(2), b.subarray(nul + 2, end)]), rename: name !== ICCP_NAME };
+  return { data: concat([asciiBytes(ICCP_NAME), new Uint8Array(2), compressed]), rename: name !== ICCP_NAME };
 }
 
 /** Removed chunks we can name more precisely than "other". */
@@ -154,16 +164,18 @@ export function parsePng(b: Uint8Array): Parsed {
       const single = SINGLE[c.type];
       const fixed = FIXED_SIZE[c.type];
       const colour = kept === 'color' || c.type === 'tRNS';
-      const iccp = c.type === 'iCCP' ? iccpProfile(b, c) : null;
       if (!apng && (c.type === 'fcTL' || c.type === 'fdAT')) drop(c, 'APNG frame without acTL');
       else if ((fixed !== undefined && c.length !== fixed) || (c.type === 'tRNS' && !tRNSSize(c.length))) drop(c, 'invalid size');
       else if (single && seen.has(single)) drop(c, 'duplicate');
       else if ((colour && afterIdat) || (BEFORE_PLTE.has(c.type) && afterPlte) || (c.type === 'tRNS' && colorType === 3 && !afterPlte)) {
         drop(c, 'out of order');
-      } else if (c.type === 'iCCP' && (hasSrgb || !iccp)) drop(c, hasSrgb ? 'superseded by sRGB' : 'invalid');
+      } else if (c.type === 'iCCP' && hasSrgb) drop(c, 'superseded by sRGB');
       else {
+        // Marked as seen even when invalid: only the first iCCP is ever inflated.
         if (single) seen.add(single);
-        if (iccp && iccp.rename) {
+        const iccp = c.type === 'iCCP' ? iccpProfile(b, c) : null;
+        if (c.type === 'iCCP' && !iccp) drop(c, 'invalid');
+        else if (iccp && iccp.rename) {
           // The profile name is free text: write a fixed one (the profile itself is kept, D3).
           iccData.set(c, iccp.data);
           blocks.push({ name: c.type, label: 'ICC profile', offset: c.offset, size: c.end - c.offset, kind: 'color', action: 'rewrite' });

@@ -66,6 +66,29 @@ describe('PNG kept chunks', () => {
     }
   });
 
+  it('keeps an iCCP only if its zlib stream ends at the chunk end and holds a real profile', () => {
+    const z = zlib(iccProfile('Display P3'));
+    const withJunk = pngChunk('iCCP', cat(ascii('ICC Profile'), Uint8Array.of(0, 0), z, ascii(CANARY)));
+    const notIcc = pngChunk('iCCP', cat(ascii('ICC Profile'), Uint8Array.of(0, 0), zlib(ascii(CANARY.repeat(20)))));
+    const bomb = pngChunk('iCCP', cat(ascii('ICC Profile'), Uint8Array.of(0, 0), zlib(new Uint8Array(32 * 1024 * 1024))));
+    for (const chunk of [withJunk, notIcc, bomb]) {
+      const input = withPngChunks(basePng(), [chunk]);
+      expect(analyze(input).blocks.find((x) => x.name === 'iCCP')).toMatchObject({ action: 'remove', label: 'invalid' });
+      const { bytes } = strip(input);
+      expect(pngTypes(bytes)).toEqual(['IHDR', 'IDAT', 'IEND']);
+      expect(contains(bytes, CANARY)).toBe(false);
+    }
+    expect(pngTypes(strip(withPngChunks(basePng(), [pngChunk('iCCP', cat(ascii('ICC Profile'), Uint8Array.of(0, 0), z))])).bytes)).toContain('iCCP');
+  });
+
+  it('inflates only the first iCCP, however many there are', () => {
+    const bomb = pngChunk('iCCP', cat(ascii('x'), Uint8Array.of(0, 0), zlib(new Uint8Array(16 * 1024 * 1024))));
+    const input = withPngChunks(basePng(), new Array<Uint8Array>(200).fill(bomb));
+    const t = performance.now();
+    strip(input);
+    expect(performance.now() - t).toBeLessThan(2000);
+  });
+
   it('refuses a repeated PLTE', () => {
     const png = basePng();
     const { chunks } = splitPng(png);

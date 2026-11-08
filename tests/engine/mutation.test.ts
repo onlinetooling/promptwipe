@@ -9,6 +9,7 @@ import {
   enc,
   fixture,
   iTXt,
+  iccProfile,
   jpegSegment,
   pngChunk,
   richExif,
@@ -20,6 +21,7 @@ import {
   withPngChunks,
   xmpPacket,
   zTXt,
+  zlib,
 } from './helpers';
 
 // Design §9: 500 random mutations (truncation, flipped and inserted bytes,
@@ -43,7 +45,7 @@ function bases(): Uint8Array[] {
   const vp8x = lossy[0]!.data.slice();
   vp8x[0] = vp8x[0]! | 0x08 | 0x04;
   return [
-    withPngChunks(basePng(), [tEXt('parameters', 'a prompt'), zTXt('workflow', '{"nodes":[1,2]}'), iTXt('XML:com.adobe.xmp', xmpPacket({ creatorTool: 'T' }), true), pngChunk('eXIf', richExif(3)), pngChunk('caBX', c2paStore())]),
+    withPngChunks(basePng(), [pngChunk('iCCP', cat(ascii('ICC Profile'), Uint8Array.of(0, 0), zlib(iccProfile('Display P3')))), tEXt('parameters', 'a prompt'), zTXt('workflow', '{"nodes":[1,2]}'), iTXt('XML:com.adobe.xmp', xmpPacket({ creatorTool: 'T' }), true), pngChunk('eXIf', richExif(3)), pngChunk('caBX', c2paStore())]),
     withPngChunks(fixture('apng.png'), [tEXt('prompt', '{"1":{"class_type":"KSampler"}}')]),
     withJpegSegments(fixture('baseline.jpg'), [jpegSegment(0xe1, exif), jpegSegment(0xfe, ascii('comment')), ...app11Segments(c2paStore({ padding: 200 }), 120)], ascii('tail')),
     withJpegSegments(fixture('progressive.jpg'), [jpegSegment(0xe1, cat(ascii('http://ns.adobe.com/xap/1.0/\0'), enc.encode(xmpPacket({ creatorTool: 'T' }))))]),

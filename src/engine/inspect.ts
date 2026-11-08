@@ -93,7 +93,7 @@ class Collector {
   }
 }
 
-async function inspectPng(b: Uint8Array, c: Collector): Promise<void> {
+function inspectPng(b: Uint8Array, c: Collector): void {
   const { chunks } = readPngChunks(b);
   for (const ch of chunks) {
     const data = b.subarray(ch.dataStart, ch.dataStart + ch.length);
@@ -120,7 +120,7 @@ async function inspectPng(b: Uint8Array, c: Collector): Promise<void> {
         let raw: Uint8Array = data.subarray(at);
         let truncated = false;
         if (compressed) {
-          const inflated = await inflate(raw, c.budget);
+          const inflated = inflate(raw, c.budget);
           if (!inflated) {
             c.warnings.add('compressed-text-unreadable');
             break;
@@ -150,7 +150,7 @@ async function inspectPng(b: Uint8Array, c: Collector): Promise<void> {
         const nul = indexOfNul(data, 0, Math.min(end, 80));
         if (nul < 1) break;
         const name = decodeLatin1(data.subarray(0, nul)).trim();
-        const profile = await inflate(data.subarray(nul + 2), c.budget);
+        const profile = inflate(data.subarray(nul + 2), c.budget);
         if (!profile) c.warnings.add('compressed-text-unreadable');
         c.colorProfile = (profile && iccDescription(profile.bytes)) || name || null;
         break;
@@ -258,7 +258,7 @@ function findComfy(c: Collector): { nodes: number } | null {
 export async function inspect(bytes: Uint8Array): Promise<Inspection> {
   const structure = parse(bytes).structure;
   const c = new Collector();
-  if (structure.format === 'png') await inspectPng(bytes, c);
+  if (structure.format === 'png') inspectPng(bytes, c);
   else if (structure.format === 'jpeg') inspectJpeg(bytes, c);
   else {
     const trailing = structure.blocks.find((x) => x.kind === 'trailing');
