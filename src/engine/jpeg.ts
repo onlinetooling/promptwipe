@@ -1,6 +1,7 @@
 import { asciiBytes, concat, need, startsWith, u16be } from './bytes';
 import { EngineError, malformed } from './errors';
 import { orientationTiff, readOrientation } from './exif';
+import { isIccProfile } from './icc';
 import { MAX_BLOCKS } from './limits';
 import type { Parsed } from './parsed';
 import type { Block, BlockAction, BlockKind, Structure } from './types';
@@ -11,6 +12,8 @@ export interface JpegSegment {
   offset: number;
   /** Start of the payload (after marker and length), or the segment end for standalone markers. */
   payload: number;
+  /** End of the marker payload; for SOS the entropy-coded data runs from here to `end`. */
+  headerEnd: number;
   /** End of the segment; for SOS, end of its entropy-coded data. */
   end: number;
 }
@@ -48,7 +51,7 @@ function isImageMarker(m: number): boolean {
 export function readJpegSegments(b: Uint8Array): { segments: JpegSegment[]; end: number } {
   need(b, 4, 'JPEG header');
   if (b[0] !== 0xff || b[1] !== 0xd8) throw malformed('JPEG does not start with SOI');
-  const segments: JpegSegment[] = [{ marker: 0xd8, offset: 0, payload: 2, end: 2 }];
+  const segments: JpegSegment[] = [{ marker: 0xd8, offset: 0, payload: 2, headerEnd: 2, end: 2 }];
   let o = 2;
   for (;;) {
     if (segments.length > MAX_BLOCKS) throw malformed('JPEG has too many blocks');
@@ -61,19 +64,20 @@ export function readJpegSegments(b: Uint8Array): { segments: JpegSegment[]; end:
     const after = m + 1;
     if (marker === 0x00) throw malformed('JPEG marker 0x00 outside scan data');
     if (marker === 0xd9) {
-      segments.push({ marker, offset: o, payload: after, end: after });
+      segments.push({ marker, offset: o, payload: after, headerEnd: after, end: after });
       return { segments, end: after };
     }
     if ((marker >= 0xd0 && marker <= 0xd7) || marker === 0x01 || marker === 0xd8) {
       if (marker === 0xd8) throw malformed('second SOI before EOI');
-      segments.push({ marker, offset: o, payload: after, end: after });
+      segments.push({ marker, offset: o, payload: after, headerEnd: after, end: after });
       o = after;
       continue;
     }
     need(b, after + 2, 'JPEG segment length');
     const length = u16be(b, after);
     if (length < 2) throw malformed('JPEG segment length under 2');
-    let end = after + length;
+    const headerEnd = after + length;
+    let end = headerEnd;
     need(b, end, 'JPEG segment');
     if (marker === 0xda) {
       // Entropy-coded data runs to the next marker that is not a stuffed
@@ -89,9 +93,61 @@ export function readJpegSegments(b: Uint8Array): { segments: JpegSegment[]; end:
       }
       end = i;
     }
-    segments.push({ marker, offset: o, payload: after + 2, end });
+    segments.push({ marker, offset: o, payload: after + 2, headerEnd, end });
     o = end;
   }
+}
+
+/**
+ * True when a decoding segment is exactly as long as its content says.
+ * Decoders reject a mismatch, and checking it means no extra bytes can ride
+ * along in a kept segment (security review 2026-11-08).
+ */
+function exactLength(b: Uint8Array, s: JpegSegment): boolean {
+  const m = s.marker;
+  const p = s.payload;
+  const n = s.headerEnd - p;
+  if (m === 0xd8 || m === 0xd9 || (m >= 0xd0 && m <= 0xd7) || m === 0x01) return n === 0;
+  if (isSof(m)) return n >= 6 && n === 6 + 3 * b[p + 5]!;
+  if (m === 0xda) return n >= 1 && n === 1 + 2 * b[p]! + 3;
+  if (m === 0xdd || m === 0xdc) return n === 2; // DRI, DNL
+  if (m === 0xdf) return n === 1; // EXP
+  if (m === 0xcc) return n > 0 && n % 2 === 0; // DAC
+  let i = p;
+  if (m === 0xdb) {
+    // DQT: (precision/id, 64 or 128 bytes) repeated
+    while (i < s.headerEnd) {
+      const precision = b[i]! >> 4;
+      if (precision > 1) return false;
+      i += 1 + (precision ? 128 : 64);
+    }
+    return n > 0 && i === s.headerEnd;
+  }
+  if (m === 0xc4) {
+    // DHT: (class/id, 16 counts, values) repeated
+    while (i < s.headerEnd) {
+      if (i + 17 > s.headerEnd) return false;
+      let count = 0;
+      for (let k = 1; k <= 16; k++) count += b[i + k]!;
+      i += 17 + count;
+    }
+    return n > 0 && i === s.headerEnd;
+  }
+  return true;
+}
+
+/** The ICC segments form one whole profile: sequence 1..N, same count, header size = data. */
+function validIcc(b: Uint8Array, icc: JpegSegment[]): boolean {
+  const n = icc.length;
+  const parts: Uint8Array[] = new Array<Uint8Array>(n);
+  for (const s of icc) {
+    if (s.end - s.payload < ICC_ID.length + 3) return false;
+    const seq = b[s.payload + ICC_ID.length]!;
+    const count = b[s.payload + ICC_ID.length + 1]!;
+    if (count !== n || seq < 1 || seq > n || parts[seq - 1]) return false;
+    parts[seq - 1] = b.subarray(s.payload + ICC_ID.length + 2, s.end);
+  }
+  return isIccProfile(concat(parts));
 }
 
 function appName(marker: number): string {
@@ -104,14 +160,31 @@ interface Plan {
   action: BlockAction;
 }
 
-function planSegment(b: Uint8Array, s: JpegSegment, firstExif: JpegSegment | undefined, orientation: number): Plan {
+interface Context {
+  firstExif: JpegSegment | undefined;
+  orientation: number;
+  iccValid: boolean;
+  seen: Set<string>;
+}
+
+function planSegment(b: Uint8Array, s: JpegSegment, ctx: Context): Plan {
   const m = s.marker;
   const p = s.payload;
   const has = (id: string): boolean => p + id.length <= s.end && startsWith(b, p, id);
-  if (isImageMarker(m)) return { kind: 'image', label: null, action: 'keep' };
+  // Only the first JFIF and the first Adobe segment are kept.
+  const first = (label: string): boolean => {
+    if (ctx.seen.has(label)) return false;
+    ctx.seen.add(label);
+    return true;
+  };
+  if (isImageMarker(m)) {
+    if (!exactLength(b, s)) throw malformed(`JPEG ${markerName(m)} segment length does not match its content`);
+    return { kind: 'image', label: null, action: 'keep' };
+  }
   switch (m) {
     case 0xe0:
       if (has(JFIF_ID) && s.end - p >= JFIF_HEADER) {
+        if (!first('JFIF')) return { kind: 'other', label: 'JFIF (duplicate)', action: 'remove' };
         const thumb = b[p + 12]! * b[p + 13]! > 0 || s.end - p > JFIF_HEADER;
         return thumb
           ? { kind: 'thumbnail', label: 'JFIF', action: 'rewrite' }
@@ -121,13 +194,17 @@ function planSegment(b: Uint8Array, s: JpegSegment, firstExif: JpegSegment | und
       return { kind: 'other', label: null, action: 'remove' };
     case 0xe1:
       if (has(EXIF_ID)) {
-        return { kind: 'exif', label: 'EXIF', action: s === firstExif && orientation !== 1 ? 'rewrite' : 'remove' };
+        return { kind: 'exif', label: 'EXIF', action: s === ctx.firstExif && ctx.orientation !== 1 ? 'rewrite' : 'remove' };
       }
       if (has(XMP_ID)) return { kind: 'xmp', label: 'XMP', action: 'remove' };
       if (has(XMP_EXT_ID)) return { kind: 'xmp', label: 'Extended XMP', action: 'remove' };
       return { kind: 'other', label: null, action: 'remove' };
     case 0xe2:
-      if (has(ICC_ID)) return { kind: 'color', label: 'ICC profile', action: 'keep' };
+      if (has(ICC_ID)) {
+        return ctx.iccValid
+          ? { kind: 'color', label: 'ICC profile', action: 'keep' }
+          : { kind: 'other', label: 'ICC profile (invalid)', action: 'remove' };
+      }
       if (has('MPF\0')) return { kind: 'secondary-image', label: 'MPF', action: 'remove' };
       return { kind: 'other', label: null, action: 'remove' };
     case 0xeb:
@@ -141,6 +218,7 @@ function planSegment(b: Uint8Array, s: JpegSegment, firstExif: JpegSegment | und
       // Adobe APP14 tells the decoder the colour transform (CMYK / YCCK): keep
       // its 12 bytes, and nothing that rides after them (L1 code review M1).
       if (!has('Adobe')) return { kind: 'other', label: null, action: 'remove' };
+      if (!first('Adobe')) return { kind: 'other', label: 'Adobe (duplicate)', action: 'remove' };
       if (s.end - p === ADOBE_SIZE) return { kind: 'color', label: 'Adobe', action: 'keep' };
       return s.end - p > ADOBE_SIZE
         ? { kind: 'color', label: 'Adobe', action: 'rewrite' }
@@ -163,7 +241,9 @@ export function parseJpeg(b: Uint8Array): Parsed {
   const firstExif = segments.find(isExif);
   const orientation = firstExif ? readOrientation(b.subarray(firstExif.payload + 6, firstExif.end)) : 1;
 
-  const plans = segments.map((s) => planSegment(b, s, firstExif, orientation));
+  const icc = segments.filter((s) => s.marker === 0xe2 && s.payload + ICC_ID.length <= s.end && startsWith(b, s.payload, ICC_ID));
+  const ctx: Context = { firstExif, orientation, iccValid: icc.length > 0 && validIcc(b, icc), seen: new Set() };
+  const plans = segments.map((s) => planSegment(b, s, ctx));
   const blocks: Block[] = segments.map((s, i) => {
     const plan = plans[i]!;
     const name = (s.marker >= 0xe0 && s.marker <= 0xef) || s.marker === 0xfe ? appName(s.marker) : markerName(s.marker);

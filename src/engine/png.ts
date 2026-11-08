@@ -38,6 +38,23 @@ const CRITICAL = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND']);
 const FIXED_SIZE: Record<string, number> = { gAMA: 4, sRGB: 1, cHRM: 32, cICP: 4, mDCV: 24, mDCv: 24, cLLI: 8, cLLi: 8 };
 const APNG_SIZE: Record<string, number> = { acTL: 8, fcTL: 26 };
 
+/** Chunks allowed once (the pre-REC spellings count as the same chunk). */
+const SINGLE: Record<string, string> = {
+  gAMA: 'gAMA', sRGB: 'sRGB', cHRM: 'cHRM', iCCP: 'iCCP', cICP: 'cICP', mDCV: 'mDCV', mDCv: 'mDCV', cLLI: 'cLLI', cLLi: 'cLLI', tRNS: 'tRNS',
+};
+/** Must come before PLTE (all colour chunks and tRNS must come before IDAT). */
+const BEFORE_PLTE = new Set(['gAMA', 'sRGB', 'cHRM', 'iCCP', 'cICP']);
+export const ICCP_NAME = 'ICC Profile';
+
+/** A valid iCCP: 1-79 byte name, NUL, compression method 0, data. Returns the chunk data with the fixed name. */
+function iccpProfile(b: Uint8Array, c: PngChunk): { data: Uint8Array<ArrayBuffer>; rename: boolean } | null {
+  const end = c.dataStart + c.length;
+  const nul = indexOfNul(b, c.dataStart, Math.min(end, c.dataStart + 80));
+  if (nul <= c.dataStart || nul + 2 >= end || b[nul + 1] !== 0) return null;
+  const name = decodeLatin1(b.subarray(c.dataStart, nul));
+  return { data: concat([asciiBytes(ICCP_NAME), new Uint8Array(2), b.subarray(nul + 2, end)]), rename: name !== ICCP_NAME };
+}
+
 /** Removed chunks we can name more precisely than "other". */
 const REMOVED_KIND: Record<string, BlockKind> = {
   tEXt: 'text',
@@ -107,32 +124,57 @@ export function parsePng(b: Uint8Array): Parsed {
   const colorType = b[ihdr.dataStart + 9]!;
   const plte = chunks.find((c) => c.type === 'PLTE');
   const apng = chunks.some((c) => c.type === 'acTL');
+  const hasSrgb = chunks.some((c) => c.type === 'sRGB');
   const tRNSSize = (n: number): boolean =>
     colorType === 0 ? n === 2 : colorType === 2 ? n === 6 : colorType === 3 ? n >= 1 && n <= (plte ? plte.length / 3 : 0) : false;
 
   const blocks: Block[] = [];
-  const keep: boolean[] = [];
+  const plan: ('keep' | 'drop' | 'iccp')[] = [];
+  const iccData = new Map<PngChunk, Uint8Array>();
+  const seen = new Set<string>();
+  let afterPlte = false;
+  let afterIdat = false;
+  const drop = (c: PngChunk, label: string): void => {
+    blocks.push({ name: c.type, label, offset: c.offset, size: c.end - c.offset, kind: 'other', action: 'remove' });
+    plan.push('drop');
+  };
   for (const c of chunks) {
     const kept = KEEP[c.type];
     if (kept) {
       if (c.type === 'IHDR' && c !== ihdr) throw malformed('PNG has a second IHDR');
       if (c.type === 'IEND' && c.length !== 0) throw malformed('PNG IEND carries data');
-      if (c.type === 'PLTE' && (c.length === 0 || c.length % 3 !== 0 || c.length > 768)) throw malformed('PNG PLTE has a bad size');
+      if (c.type === 'PLTE' && (c.length === 0 || c.length % 3 !== 0 || c.length > 768 || afterPlte)) {
+        throw malformed('PNG PLTE has a bad size or is repeated');
+      }
       const apngSize = APNG_SIZE[c.type];
       if (apng && apngSize !== undefined && c.length !== apngSize) throw malformed(`PNG ${c.type} has a bad size`);
+      if (c.type === 'acTL' && seen.has('acTL')) throw malformed('PNG acTL is repeated');
+      if (c.type === 'acTL') seen.add('acTL');
+
+      const single = SINGLE[c.type];
       const fixed = FIXED_SIZE[c.type];
-      const invalid =
-        (fixed !== undefined && c.length !== fixed) ||
-        (c.type === 'tRNS' && !tRNSSize(c.length)) ||
-        (!apng && (c.type === 'fcTL' || c.type === 'fdAT'));
-      if (invalid) {
-        const label = !apng && (c.type === 'fcTL' || c.type === 'fdAT') ? 'APNG frame without acTL' : 'invalid size';
-        blocks.push({ name: c.type, label, offset: c.offset, size: c.end - c.offset, kind: 'other', action: 'remove' });
-        keep.push(false);
-        continue;
+      const colour = kept === 'color' || c.type === 'tRNS';
+      const iccp = c.type === 'iCCP' ? iccpProfile(b, c) : null;
+      if (!apng && (c.type === 'fcTL' || c.type === 'fdAT')) drop(c, 'APNG frame without acTL');
+      else if ((fixed !== undefined && c.length !== fixed) || (c.type === 'tRNS' && !tRNSSize(c.length))) drop(c, 'invalid size');
+      else if (single && seen.has(single)) drop(c, 'duplicate');
+      else if ((colour && afterIdat) || (BEFORE_PLTE.has(c.type) && afterPlte) || (c.type === 'tRNS' && colorType === 3 && !afterPlte)) {
+        drop(c, 'out of order');
+      } else if (c.type === 'iCCP' && (hasSrgb || !iccp)) drop(c, hasSrgb ? 'superseded by sRGB' : 'invalid');
+      else {
+        if (single) seen.add(single);
+        if (iccp && iccp.rename) {
+          // The profile name is free text: write a fixed one (the profile itself is kept, D3).
+          iccData.set(c, iccp.data);
+          blocks.push({ name: c.type, label: 'ICC profile', offset: c.offset, size: c.end - c.offset, kind: 'color', action: 'rewrite' });
+          plan.push('iccp');
+        } else {
+          blocks.push({ name: c.type, label: null, offset: c.offset, size: c.end - c.offset, kind: kept, action: 'keep' });
+          plan.push('keep');
+        }
       }
-      blocks.push({ name: c.type, label: null, offset: c.offset, size: c.end - c.offset, kind: kept, action: 'keep' });
-      keep.push(true);
+      if (c.type === 'PLTE') afterPlte = true;
+      if (c.type === 'IDAT') afterIdat = true;
       continue;
     }
     // First letter uppercase = critical: a decoder must understand it, so
@@ -148,7 +190,7 @@ export function parsePng(b: Uint8Array): Parsed {
     }
     const action = c === firstExif && orientation !== 1 ? 'rewrite' : 'remove';
     blocks.push({ name: c.type, label, offset: c.offset, size: c.end - c.offset, kind, action });
-    keep.push(false);
+    plan.push('drop');
   }
   if (end < b.length) {
     blocks.push({ name: 'trailing data', label: null, offset: end, size: b.length - end, kind: 'trailing', action: 'remove' });
@@ -170,7 +212,8 @@ export function parsePng(b: Uint8Array): Parsed {
     write(): Uint8Array<ArrayBuffer> {
       const parts: Uint8Array[] = [new Uint8Array(SIGNATURE)];
       chunks.forEach((c, i) => {
-        if (keep[i]) parts.push(b.subarray(c.offset, c.end));
+        if (plan[i] === 'keep') parts.push(b.subarray(c.offset, c.end));
+        else if (plan[i] === 'iccp') parts.push(pngChunk('iCCP', iccData.get(c)!));
         // eXIf goes right after IHDR: before IDAT (PNG 3e) and before acTL.
         if (c === ihdr && orientation !== 1) parts.push(orientationBlock(orientation));
       });

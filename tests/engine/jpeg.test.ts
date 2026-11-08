@@ -63,8 +63,8 @@ describe('JPEG — everything a phone or a generator leaves', () => {
     expect(result.orientationKept).toBe(6);
     const after = markers(result.bytes);
     expect(after.slice(0, 5)).toEqual(['d8', 'APP0:JFIF', 'APP1:Exif', 'APP2:ICC_PROFILE', 'APP14:Adobe']);
-    // The base file's own JFIF (written by ImageMagick) stays too.
-    expect(after.filter((m) => m.startsWith('APP'))).toEqual(['APP0:JFIF', 'APP1:Exif', 'APP2:ICC_PROFILE', 'APP14:Adobe', 'APP0:JFIF']);
+    // Only the first JFIF is kept: the base file's own JFIF is a duplicate.
+    expect(after.filter((m) => m.startsWith('APP'))).toEqual(['APP0:JFIF', 'APP1:Exif', 'APP2:ICC_PROFILE', 'APP14:Adobe']);
     expect(after).not.toContain('fe');
     expect(after.at(-1)).toBe('d9');
 
@@ -95,6 +95,7 @@ describe('JPEG — everything a phone or a generator leaves', () => {
       'remove:APP13:Photoshop / IPTC:iptc',
       'remove:APP15::other',
       'remove:COM::comment',
+      'remove:APP0:JFIF (duplicate):other',
       'remove:trailing data::secondary-image',
     ]);
   });

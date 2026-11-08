@@ -1,5 +1,10 @@
 import { decodeLatin1, fourcc, trimText, u32be } from './bytes';
 
+/** A whole ICC profile: header size equals the data length, "acsp" signature at 36. */
+export function isIccProfile(p: Uint8Array): boolean {
+  return p.length >= 132 && u32be(p, 0) === p.length && fourcc(p, 36) === 'acsp';
+}
+
 /**
  * The profile description ("sRGB IEC61966-2.1", "Display P3"…) of an ICC
  * profile, shown in the report because the profile is kept (design D3, review

@@ -1,6 +1,7 @@
 import { asciiBytes, concat, fourcc, le32, need, startsWith, u16le, u24le, u32le } from './bytes';
 import { malformed } from './errors';
 import { orientationTiff, readOrientation } from './exif';
+import { isIccProfile } from './icc';
 import { MAX_BLOCKS } from './limits';
 import type { Parsed } from './parsed';
 import type { Block, BlockKind, Structure } from './types';
@@ -16,8 +17,9 @@ export interface RiffChunk {
 
 const FLAG_EXIF = 0x08;
 const FLAG_ANIMATION = 0x02;
-/** VP8X flags kept as they are: ICC, alpha, animation. Reserved bits are zeroed. */
-const FLAGS_KEPT = 0x20 | 0x10 | FLAG_ANIMATION;
+const FLAG_ICC = 0x20;
+/** VP8X flags kept as they are: alpha, animation. ICC and EXIF are recomputed, reserved bits zeroed. */
+const FLAGS_KEPT = 0x10 | FLAG_ANIMATION;
 const ANIM_SIZE = 6;
 
 const KEEP: Record<string, BlockKind> = {
@@ -105,10 +107,70 @@ export function parseWebp(b: Uint8Array): Parsed {
     ? readOrientation(exifTiffOf(b.subarray(firstExif.dataStart, firstExif.dataStart + firstExif.size)))
     : 1;
 
+  // Strict layout (security review 2026-11-08), so no duplicate or misplaced
+  // image chunk can ride along: simple format = the first bitstream only;
+  // extended = VP8X, at most one valid ICCP (flag set) before the image, then
+  // ANIM + ANMF frames when animated, else an optional ALPH right before VP8
+  // and a single bitstream.
+  const animatedFlag = extended && (flags & FLAG_ANIMATION) !== 0;
+  const layout = new Set<RiffChunk>([first]);
+  let iccKept = false;
+  if (extended) {
+    let imageSeen = false;
+    let animKept = false;
+    let bitstream = false;
+    let frameCount = 0;
+    chunks.forEach((c, i) => {
+      if (i === 0) return;
+      const keepIt = (): void => {
+        layout.add(c);
+      };
+      switch (c.fourcc) {
+        case 'ICCP':
+          if (!iccKept && !imageSeen && (flags & FLAG_ICC) !== 0 && isIccProfile(b.subarray(c.dataStart, c.dataStart + c.size))) {
+            keepIt();
+            iccKept = true;
+          }
+          break;
+        case 'ANIM':
+          if (animatedFlag && !animKept && !imageSeen) {
+            keepIt();
+            animKept = true;
+          }
+          break;
+        case 'ANMF':
+          if (animatedFlag && animKept) {
+            keepIt();
+            frameCount++;
+          }
+          imageSeen = true;
+          break;
+        case 'ALPH':
+          if (!animatedFlag && !bitstream && !imageSeen && chunks[i + 1]?.fourcc === 'VP8 ') keepIt();
+          imageSeen = true;
+          break;
+        case 'VP8 ':
+        case 'VP8L':
+          if (!animatedFlag && !bitstream) {
+            keepIt();
+            bitstream = true;
+          }
+          imageSeen = true;
+          break;
+      }
+    });
+    if (animatedFlag ? frameCount === 0 : !bitstream) throw malformed('WebP has no image data in the expected place');
+  }
+
   const blocks: Block[] = [];
   const frames = new Map<RiffChunk, RiffChunk[]>();
   for (const c of chunks) {
     const kept = KEEP[c.fourcc];
+    if (kept && !layout.has(c)) {
+      const label = c.fourcc === 'ICCP' ? 'ICC profile (invalid, repeated or without flag)' : 'out of place';
+      blocks.push({ name: nameOf(c.fourcc), label, offset: c.offset, size: c.end - c.offset, kind: 'other', action: 'remove' });
+      continue;
+    }
     if (kept) {
       // ANIM is 6 bytes by the spec; anything after them is not kept (L1 code review M1).
       if (c.fourcc === 'ANIM' && c.size < ANIM_SIZE) throw malformed('WebP ANIM chunk too short');
@@ -117,14 +179,23 @@ export function parseWebp(b: Uint8Array): Parsed {
       if (c.fourcc === 'ANMF') {
         if (c.size < ANMF_HEADER) throw malformed('WebP ANMF chunk too short');
         const subs = readRiffChunks(b, c.dataStart + ANMF_HEADER, c.dataStart + c.size);
-        if (!subs.some((s) => s.fourcc === 'VP8 ' || s.fourcc === 'VP8L')) throw malformed('WebP frame has no bitstream');
-        frames.set(c, subs.filter((s) => FRAME_KEEP.has(s.fourcc)));
-        // The spec allows unknown chunks at the end of a frame: drop them too.
-        for (const s of subs) {
-          if (!FRAME_KEEP.has(s.fourcc)) {
-            blocks.push({ name: `ANMF/${nameOf(s.fourcc)}`, label: null, offset: s.offset, size: s.end - s.offset, kind: 'other', action: 'remove' });
+        // A frame keeps an optional ALPH right before VP8 and its first
+        // bitstream; unknown chunks (allowed at the end of a frame) and
+        // repeated image chunks are dropped.
+        const keptSubs: RiffChunk[] = [];
+        let bitstream = false;
+        subs.forEach((sub, j) => {
+          const isBitstream = sub.fourcc === 'VP8 ' || sub.fourcc === 'VP8L';
+          const ok = isBitstream ? !bitstream : sub.fourcc === 'ALPH' && !bitstream && keptSubs.length === 0 && subs[j + 1]?.fourcc === 'VP8 ';
+          if (isBitstream && ok) bitstream = true;
+          if (ok) keptSubs.push(sub);
+          else {
+            const label = FRAME_KEEP.has(sub.fourcc) ? 'out of place' : null;
+            blocks.push({ name: `ANMF/${nameOf(sub.fourcc)}`, label, offset: sub.offset, size: sub.end - sub.offset, kind: 'other', action: 'remove' });
           }
-        }
+        });
+        if (!bitstream) throw malformed('WebP frame has no bitstream');
+        frames.set(c, keptSubs);
       }
       continue;
     }
@@ -148,7 +219,7 @@ export function parseWebp(b: Uint8Array): Parsed {
     mime: 'image/webp',
     width,
     height,
-    animated: (flags & FLAG_ANIMATION) !== 0 || chunks.some((c) => c.fourcc === 'ANIM'),
+    animated: animatedFlag,
     orientation,
     blocks,
   };
@@ -159,9 +230,10 @@ export function parseWebp(b: Uint8Array): Parsed {
     write(): Uint8Array<ArrayBuffer> {
       const parts: Uint8Array[] = [];
       for (const c of chunks) {
+        if (KEEP[c.fourcc] && !layout.has(c)) continue; // duplicate or misplaced image chunk
         if (c.fourcc === 'VP8X') {
           const data = b.slice(c.dataStart, c.dataStart + 10);
-          data[0] = (data[0]! & FLAGS_KEPT) | (orientation !== 1 ? FLAG_EXIF : 0);
+          data[0] = (data[0]! & FLAGS_KEPT) | (iccKept ? FLAG_ICC : 0) | (orientation !== 1 ? FLAG_EXIF : 0);
           data.fill(0, 1, 4); // reserved
           parts.push(asciiBytes('VP8X'), le32(10), data);
         } else if (c.fourcc === 'ANIM') {
