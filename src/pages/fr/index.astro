@@ -1,6 +1,19 @@
 ---
+import Limits from '../../components/Limits.astro';
+import Tool from '../../components/Tool.astro';
 import Base from '../../layouts/Base.astro';
 ---
-<Base lang="fr" title="PromptWipe" description="Supprimez les métadonnées de vos images IA, dans votre navigateur.">
-  <h1>PromptWipe</h1>
+<Base
+  lang="fr"
+  title="Supprimer les métadonnées d’une image IA — PromptWipe"
+  description={'Voyez et supprimez le prompt, le workflow ComfyUI, le C2PA et les données EXIF / GPS cachés dans vos images IA. Gratuit, dans votre navigateur\u00a0: rien n’est envoyé.'}
+>
+  <h1>Supprimer les métadonnées d’une image IA</h1>
+  <p class="lead">
+    PromptWipe montre ce que contient une image IA — prompt, seed, modèle, workflow ComfyUI, Content Credentials
+    (C2PA), EXIF et position GPS — puis le retire sans toucher aux pixels. Tout se passe dans votre navigateur&nbsp;:
+    l’image n’est jamais envoyée. Il ne retire pas les filigranes invisibles comme SynthID.
+  </p>
+  <Tool lang="fr" />
+  <Limits lang="fr" />
 </Base>

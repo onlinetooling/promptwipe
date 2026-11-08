@@ -1,0 +1,40 @@
+---
+// "What PromptWipe does not do" (design §3), on the tool and on every page.
+// Wording from research metadata.md §9 (responsible-use draft, lawyer review
+// pending before launch, design §7).
+import type { Lang } from '../ui/messages';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+{lang === 'en' ? (
+  <aside class="limits" aria-labelledby="limits-title">
+    <h2 id="limits-title">What PromptWipe does not do</h2>
+    <ul>
+      <li>It does not remove invisible watermarks written into the pixels, such as SynthID.</li>
+      <li>It does not make an image undetectable as AI-generated.</li>
+      <li>
+        Use it on your own images. Do not use it to deceive people about how an image was made, to remove another
+        person’s copyright information, or to avoid labelling duties that apply to you (for example for deepfakes,
+        under Article 50(4) of the EU AI Act). You are responsible for how you use and publish your images.
+      </li>
+    </ul>
+  </aside>
+) : (
+  <aside class="limits" aria-labelledby="limits-title">
+    <h2 id="limits-title">Ce que PromptWipe ne fait pas</h2>
+    <ul>
+      <li>Il ne retire pas les filigranes invisibles inscrits dans les pixels, comme SynthID.</li>
+      <li>Il ne rend pas une image indétectable comme image générée par IA.</li>
+      <li>
+        Utilisez-le sur vos propres images. Ne l’utilisez pas pour tromper sur la façon dont une image a été faite,
+        pour retirer les informations de droits d’auteur d’une autre personne, ni pour échapper aux obligations
+        d’indication qui s’appliquent à vous (par exemple pour les hypertrucages, article&nbsp;50, paragraphe&nbsp;4,
+        du règlement européen sur l’IA). Vous êtes responsable de l’usage et de la publication de vos images.
+      </li>
+    </ul>
+  </aside>
+)}

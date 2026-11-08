@@ -1,0 +1,41 @@
+name: Bug report / Signaler un problème
+description: Something went wrong with an image. / Un problème avec une image.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not attach a private image, and do not paste its prompt or metadata here: this page is public.
+        The diagnostic below describes only the structure of the file (format, blocks, sizes).
+
+        Merci de ne pas joindre d’image privée ni de coller son prompt ou ses métadonnées : cette page est publique.
+        Le diagnostic ci-dessous ne décrit que la structure du fichier (format, blocs, tailles).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened? / Que s’est-il passé ?
+      description: What you did, what you expected, what you saw. / Ce que vous avez fait, attendu, constaté.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Diagnostic
+      description: |
+        Click “Copy the diagnostic” under the result, then paste it here.
+        Cliquez sur « Copier le diagnostic » sous le résultat, puis collez-le ici.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and system / Navigateur et système
+      placeholder: Firefox 150, Windows 11 / Safari, iOS 26
+    validations:
+      required: true
+  - type: input
+    id: generator
+    attributes:
+      label: Where does the image come from? / D’où vient l’image ?
+      placeholder: ComfyUI, ChatGPT, phone camera… / ComfyUI, ChatGPT, appareil photo…

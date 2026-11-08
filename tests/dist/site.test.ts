@@ -45,6 +45,37 @@ describe('built site', () => {
     for (const page of pages) expect(known, page).toContain(page);
   });
 
+  it('loads the tool as an external module on both tool pages', () => {
+    for (const page of ['index.html', 'fr/index.html']) {
+      const html = readFileSync(join(DIST, page), 'utf8');
+      expect(html, page).toMatch(/<script type="module" src="\/_astro\/[^"]+\.js"><\/script>/);
+      expect(html, page).toContain('data-tool');
+    }
+  });
+
+  it('bundles no HTML sink and no network call (CSP connect-src none)', () => {
+    const js = htmlFiles(DIST).length ? readdirSync(join(DIST, '_astro')).filter((f) => f.endsWith('.js')) : [];
+    expect(js.length).toBeGreaterThan(0);
+    for (const name of js) {
+      const code = readFileSync(join(DIST, '_astro', name), 'utf8');
+      expect(code, name).not.toMatch(/innerHTML|outerHTML|insertAdjacentHTML|document\.write|DOMParser/);
+      expect(code, name).not.toMatch(/\bfetch\(|XMLHttpRequest|sendBeacon|WebSocket|EventSource/);
+    }
+  });
+
+  it('follows French typography on French pages (no-break space before : ; ? ! and inside « »)', () => {
+    const fr = files.filter((f) => urlOf(f).startsWith('/fr/'));
+    expect(fr.length).toBeGreaterThan(0);
+    for (const file of fr) {
+      const html = readFileSync(file, 'utf8').replace(/<script\b[\s\S]*?<\/script>/gi, '');
+      const attrs = [...html.matchAll(/\s(?:content|alt|title|aria-label)="([^"]*)"/g)].map((m) => m[1] ?? '');
+      const text = [html.replace(/<[^>]*>/g, ' '), ...attrs].join('\n').replace(/&nbsp;/g, '\u00a0');
+      // Ordinary space (not U+00A0 / U+202F) right before French high punctuation; skips URLs ("https:").
+      const bad = text.match(/[^\s] [:;?!»]|« /g);
+      expect(bad, urlOf(file)).toBeNull();
+    }
+  });
+
   it('ships the CSP headers file', () => {
     const headers = readFileSync(join(DIST, '_headers'), 'utf8');
     expect(headers).toContain("default-src 'none'");

@@ -154,6 +154,11 @@ export function parseWebp(b: Uint8Array): Parsed {
           if (!animatedFlag && !bitstream) {
             keepIt();
             bitstream = true;
+            // A still image is decoded at its bitstream size, which libwebp
+            // requires to equal the canvas: the UI's 40 Mpx decode cap reads
+            // the canvas, so a small canvas must not hide a huge frame.
+            const frame = dimensions(b, c);
+            if (frame.width !== width || frame.height !== height) throw malformed('WebP canvas size does not match the image size');
           }
           imageSeen = true;
           break;

@@ -13,6 +13,7 @@ import {
   riffChunk,
   splitRiff,
   tiff,
+  vp8x,
   webpFile,
   xmpPacket,
 } from './helpers';
@@ -177,5 +178,16 @@ describe('WebP — refusals', () => {
 
   it('refuses a file whose first chunk is not an image', () => {
     expect(() => strip(webpFile([riffChunk('XMP ', ascii('<x/>'))]))).toThrowError(/VP8/);
+  });
+});
+
+describe('L2 review: canvas and frame sizes', () => {
+  it('refuses a still image whose VP8X canvas does not match its bitstream (the 40 Mpx decode cap reads the canvas)', () => {
+    const lossy = splitRiff(fixture('lossy.webp'));
+    const bitstream = lossy.find((c) => c.id === 'VP8 ' || c.id === 'VP8L')!;
+    const tiny = webpFile([vp8x(0, 1, 1), bitstream.bytes]);
+    expect(() => strip(tiny)).toThrow(/canvas size does not match/);
+    const right = analyze(fixture('lossy.webp'));
+    expect(() => strip(webpFile([vp8x(0, right.width, right.height), bitstream.bytes]))).not.toThrow();
   });
 });

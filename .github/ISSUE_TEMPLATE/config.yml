@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Request a feature or a format / Demander une fonction ou un format
+    url: https://github.com/onlinetooling/promptwipe/discussions
+    about: Ideas, new formats (AVIF, HEIC, GIF…), questions. / Idées, nouveaux formats, questions.

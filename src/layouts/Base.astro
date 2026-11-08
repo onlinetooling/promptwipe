@@ -1,5 +1,7 @@
 ---
+import '../styles/global.css';
 import { absolute, alternatesFor, type Lang } from '../i18n/routes';
+import { LINKS } from '../ui/links';
 
 interface Props {
   lang: Lang;
@@ -11,6 +13,25 @@ const { lang, title, description } = Astro.props;
 const path = Astro.url.pathname;
 const pair = alternatesFor(path);
 if (!pair) throw new Error(`Page ${path} is missing from src/i18n/routes.ts`);
+
+// Language switcher: plain links, no automatic redirect (design §6).
+const other = lang === 'en' ? { href: pair.fr, lang: 'fr', label: 'Français' } : { href: pair.en, lang: 'en', label: 'English' };
+const text = {
+  en: {
+    home: '/',
+    privacy: 'Your images never leave your browser: PromptWipe has no server that receives them.',
+    feature: 'Request a feature',
+    bug: 'Report a bug',
+    source: 'Source code (MIT)',
+  },
+  fr: {
+    home: '/fr/',
+    privacy: 'Vos images ne quittent jamais votre navigateur : PromptWipe n’a aucun serveur qui les reçoit.',
+    feature: 'Demander une fonction',
+    bug: 'Signaler un problème',
+    source: 'Code source (MIT)',
+  },
+}[lang];
 ---
 <!doctype html>
 <html lang={lang}>
@@ -19,12 +40,28 @@ if (!pair) throw new Error(`Page ${path} is missing from src/i18n/routes.ts`);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="canonical" href={absolute(path)} />
     <link rel="alternate" hreflang="en" href={absolute(pair.en)} />
     <link rel="alternate" hreflang="fr" href={absolute(pair.fr)} />
     <link rel="alternate" hreflang="x-default" href={absolute(pair.en)} />
   </head>
   <body>
-    <slot />
+    <header class="site-header">
+      <a class="brand" href={text.home}>PromptWipe</a>
+      <a class="lang-switch" href={other.href} hreflang={other.lang} lang={other.lang}>{other.label}</a>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <p>{text.privacy}</p>
+      <ul class="footer-links">
+        <li><a href={LINKS.discussions}>{text.feature}</a></li>
+        <li><a href={LINKS.bugReport}>{text.bug}</a></li>
+        <li><a href={LINKS.repo}>{text.source}</a></li>
+      </ul>
+    </footer>
   </body>
 </html>

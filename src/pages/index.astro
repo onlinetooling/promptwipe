@@ -1,6 +1,19 @@
 ---
+import Limits from '../components/Limits.astro';
+import Tool from '../components/Tool.astro';
 import Base from '../layouts/Base.astro';
 ---
-<Base lang="en" title="PromptWipe" description="Remove metadata from AI images, in your browser.">
-  <h1>PromptWipe</h1>
+<Base
+  lang="en"
+  title="Remove Metadata from AI Images — PromptWipe"
+  description="See and remove the prompt, ComfyUI workflow, C2PA and EXIF / GPS data hidden in AI images. Free, in your browser: nothing is uploaded."
+>
+  <h1>Remove metadata from AI images</h1>
+  <p class="lead">
+    PromptWipe shows what an AI image carries — prompt, seed, model, ComfyUI workflow, Content Credentials (C2PA),
+    EXIF and GPS location — then removes it without touching the pixels. Everything happens in your browser: your
+    image is never uploaded. It does not remove invisible watermarks such as SynthID.
+  </p>
+  <Tool lang="en" />
+  <Limits lang="en" />
 </Base>

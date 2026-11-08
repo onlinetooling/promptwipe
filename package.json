@@ -1,7 +1,7 @@
 {
   "name": "promptwipe",
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "packageManager": "pnpm@10.8.1",
   "scripts": {
@@ -10,13 +10,15 @@
     "preview": "astro preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:dist": "vitest run --config vitest.dist.config.ts"
+    "test:dist": "vitest run --config vitest.dist.config.ts",
+    "serve:dist": "node scripts/serve-dist.mjs"
   },
   "dependencies": {
     "astro": "^7.4.7"
   },
   "devDependencies": {
     "@types/pngjs": "^6.0.5",
+    "happy-dom": "^21.0.4",
     "jpeg-js": "^0.4.4",
     "pngjs": "^7.0.0",
     "typescript": "^7.0.2",

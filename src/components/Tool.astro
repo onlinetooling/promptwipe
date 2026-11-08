@@ -1,0 +1,32 @@
+---
+// The tool (design §3). Markup only; src/ui/tool.ts does the work. The
+// script is bundled to an external file (no inline JS: CSP script-src 'self')
+// and loaded with the page, so the tool keeps working offline once loaded.
+import { type Lang, messages } from '../ui/messages';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = messages[lang];
+---
+<section class="tool" data-tool data-lang={lang} aria-labelledby="tool-title">
+  <h2 id="tool-title" class="visually-hidden">{t.toolTitle}</h2>
+  <label class="drop" data-drop>
+    <input type="file" accept="image/*" class="visually-hidden" data-input />
+    <span class="drop-main">{t.drop}</span>
+    <span class="drop-or">{t.choose}</span>
+    <span class="drop-hint">{t.formats}</span>
+  </label>
+  <p class="paste-hint">{t.pasteHint}</p>
+  <noscript><p class="verdict verdict-error">{t.noScript}</p></noscript>
+  <p class="status" role="status" aria-live="polite" data-status></p>
+  <div class="result" data-result hidden></div>
+</section>
+
+<script>
+  import { mountTool } from '../ui/tool';
+
+  for (const root of document.querySelectorAll<HTMLElement>('[data-tool]')) mountTool(root);
+</script>
