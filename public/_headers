@@ -1,0 +1,6 @@
+# Cloudflare Pages response headers (design §3). Nothing on the site loads from
+# another origin and nothing is sent anywhere: images never leave the browser.
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
