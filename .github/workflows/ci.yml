@@ -23,3 +23,18 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm test:dist
+      # Deploy (design §8). Until launch, pushes to main go to the "preview"
+      # branch (preview.promptwipe.pages.dev); production is switched on by a
+      # later commit (--branch main), with the owner's GO. Pull requests get a
+      # preview only when they come from this repository: forks have no
+      # secrets, and pull_request_target is never used.
+      - name: Deploy to Cloudflare Pages
+        if: >-
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          BRANCH: ${{ github.event_name == 'push' && 'preview' || format('pr-{0}', github.event.pull_request.number) }}
+        run: pnpm exec wrangler pages deploy dist --project-name promptwipe --branch "$BRANCH" --commit-hash "$GITHUB_SHA"
