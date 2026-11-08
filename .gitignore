@@ -1,0 +1,21 @@
+# Dependencies and build output
+node_modules/
+dist/
+.astro/
+.wrangler/
+
+# Secrets and local environment
+.env
+.env.*
+.dev.vars
+
+# Private working files (owner rule 2026-11-08): plans, research, reviews and
+# assistant notes stay on this machine and never reach the public repository.
+docs/plans/
+CLAUDE.md
+.claude/
+.remember/
+
+# OS / editor
+.DS_Store
+*.swp

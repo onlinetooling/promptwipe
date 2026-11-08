@@ -1,0 +1,5 @@
+# PromptWipe: every crawler, search engine and AI answer engine is welcome.
+User-agent: *
+Allow: /
+
+Sitemap: https://promptwipe.pages.dev/sitemap.xml

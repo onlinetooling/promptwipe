@@ -1,0 +1,30 @@
+---
+import { absolute, alternatesFor, type Lang } from '../i18n/routes';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+}
+
+const { lang, title, description } = Astro.props;
+const path = Astro.url.pathname;
+const pair = alternatesFor(path);
+if (!pair) throw new Error(`Page ${path} is missing from src/i18n/routes.ts`);
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={absolute(path)} />
+    <link rel="alternate" hreflang="en" href={absolute(pair.en)} />
+    <link rel="alternate" hreflang="fr" href={absolute(pair.fr)} />
+    <link rel="alternate" hreflang="x-default" href={absolute(pair.en)} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
