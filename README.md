@@ -3,7 +3,7 @@
 See and remove the metadata hidden in AI-generated images (prompts, seeds, ComfyUI workflows, C2PA / Content
 Credentials, EXIF, GPS). Everything runs in your browser: images are never uploaded.
 
-Status: under construction.
+Live at https://promptwipe.pages.dev (English) and https://promptwipe.pages.dev/fr/ (French).
 
 ## Development
 
