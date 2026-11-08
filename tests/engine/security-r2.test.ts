@@ -1,6 +1,7 @@
 // Regression tests for the automated security review of 2026-11-08 (second
 // pass): data must not ride along in a kept block that is repeated, misplaced
 // or longer than its content.
+import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { analyze, strip, verifyClean } from '../../src/engine';
 import {
@@ -48,15 +49,21 @@ describe('PNG kept chunks', () => {
     expect(analyze(input).blocks.filter((b) => b.action === 'remove').map((b) => b.label)).toEqual(['duplicate', 'out of order']);
   });
 
-  it('rewrites the free-text iCCP name and keeps the compressed profile as is', () => {
+  it('rebuilds iCCP from the decoded profile: fixed name, deterministic encoding', () => {
     const input = withPngChunks(basePng(), [iccp(`${CANARY} tracking id`)]);
     expect(analyze(input).blocks.find((b) => b.name === 'iCCP')).toMatchObject({ action: 'rewrite', kind: 'color' });
     const { bytes } = strip(input);
     expect(contains(bytes, CANARY)).toBe(false);
     const out = splitPng(bytes).chunks.find((c) => c.type === 'iCCP')!;
     expect(Buffer.from(out.data.subarray(0, 12)).toString('latin1')).toBe('ICC Profile\0');
-    expect(Buffer.from(out.data.subarray(13)).equals(Buffer.from(zlib(iccProfile('Display P3'))))).toBe(true);
+    expect(Buffer.from(inflateSync(out.data.subarray(13))).equals(Buffer.from(iccProfile('Display P3')))).toBe(true);
     expect(verifyClean(bytes)).toBe(true);
+    // Already canonical name: rebuilt all the same (no original compressed byte is kept), and idempotent.
+    const canonical = withPngChunks(basePng(), [iccp('ICC Profile')]);
+    expect(analyze(canonical).blocks.find((b) => b.name === 'iCCP')?.action).toBe('rewrite');
+    const once = strip(canonical).bytes;
+    expect(analyze(once).blocks.find((b) => b.name === 'iCCP')?.action).toBe('keep');
+    expect(Buffer.from(strip(once).bytes).equals(Buffer.from(once))).toBe(true);
   });
 
   it('drops an iCCP with a bad compression method or next to sRGB', () => {

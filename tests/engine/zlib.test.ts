@@ -86,3 +86,16 @@ describe('inflateZlib', () => {
     expect(adler32(Buffer.from('Wikipedia'))).toBe(0x11e60398);
   });
 });
+
+describe('zlibStored', () => {
+  it('round-trips through node:zlib and our inflater, any size', async () => {
+    const { inflateSync } = await import('node:zlib');
+    const { zlibStored } = await import('../../src/engine/zlib');
+    for (const size of [0, 1, 65535, 65536, 200_000]) {
+      const data = sample(0, size);
+      const z = zlibStored(data);
+      expect(Buffer.from(inflateSync(z)).equals(Buffer.from(data))).toBe(true);
+      expect(inflateZlib(z, 1 << 20)).toMatchObject({ complete: true, end: z.length });
+    }
+  });
+});

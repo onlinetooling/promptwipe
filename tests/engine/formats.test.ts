@@ -9,14 +9,17 @@ import {
   enc,
   fixture,
   iTXt,
+  iccProfile,
   jpegSegment,
   pngChunk,
+  richExif,
   tEXt,
   tiff,
   withJpegSegments,
   withPngChunks,
   xmpPacket,
   zTXt,
+  zlib,
 } from './helpers';
 
 const ftyp = (major: string, ...compatible: string[]): Uint8Array => {
@@ -60,6 +63,21 @@ describe('format detection and refusals', () => {
     big.set(basePng());
     expect(codeOf(() => strip(big))).toBe('too-large:');
     await expect(inspect(big)).rejects.toMatchObject({ code: 'too-large' });
+  });
+});
+
+describe('idempotence', () => {
+  it('cleaning a cleaned file changes nothing', () => {
+    const inputs = [
+      withPngChunks(basePng(), [pngChunk('iCCP', cat(ascii('my profile'), Uint8Array.of(0, 0), zlib(iccProfile('Display P3')))), tEXt('a', 'b'), pngChunk('eXIf', richExif(6))]),
+      withJpegSegments(fixture('progressive.jpg'), [jpegSegment(0xe1, cat(ascii('Exif\0\0'), richExif(3))), jpegSegment(0xfe, ascii('c'))]),
+      cat(fixture('animated.webp'), ascii('tail')),
+      fixture('lossy-alpha.webp'),
+    ];
+    for (const input of inputs) {
+      const once = strip(input).bytes;
+      expect(Buffer.from(strip(once).bytes).equals(Buffer.from(once))).toBe(true);
+    }
   });
 });
 

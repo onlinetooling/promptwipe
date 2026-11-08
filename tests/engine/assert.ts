@@ -5,8 +5,8 @@ import { analyze, strip, verifyClean, type StripResult } from '../../src/engine'
 export function keptBlocks(b: Uint8Array): string[] {
   return analyze(b)
     .blocks.filter((x) => x.action === 'keep' && (x.kind === 'image' || x.kind === 'color'))
-    // VP8X (flags), ANMF (frame chunks) and JFIF (thumbnail) are rebuilt on purpose.
-    .filter((x) => x.name !== 'VP8X' && x.name !== 'ANMF' && x.label !== 'JFIF')
+    // VP8X (flags), ANMF (frame chunks), JFIF (thumbnail) and iCCP (name, encoding) are rebuilt on purpose.
+    .filter((x) => x.name !== 'VP8X' && x.name !== 'ANMF' && x.name !== 'iCCP' && x.label !== 'JFIF')
     .map((x) => Buffer.from(b.subarray(x.offset, x.offset + x.size)).toString('hex'));
 }
 

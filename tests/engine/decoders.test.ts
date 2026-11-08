@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { strip } from '../../src/engine';
-import { app11Segments, ascii, basePng, c2paStore, cat, fixture, jpegSegment, pngChunk, richExif, riffChunk, splitRiff, tEXt, webpFile, withJpegSegments, withPngChunks } from './helpers';
+import { app11Segments, ascii, basePng, c2paStore, cat, fixture, iccProfile, jpegSegment, pngChunk, richExif, riffChunk, splitRiff, tEXt, webpFile, withJpegSegments, withPngChunks, zlib } from './helpers';
 
 const has = (cmd: string): boolean => {
   try {
@@ -28,6 +28,7 @@ describe.skipIf(!tools)('real decoders (local, needs magick + djpeg + dwebp + we
   vp8x[0] = vp8x[0]! | 0x0c;
   const cases: Record<string, Uint8Array> = {
     'png.png': withPngChunks(basePng(), [tEXt('parameters', 'p'), pngChunk('eXIf', richExif(6)), pngChunk('caBX', c2paStore())]),
+    'iccp.png': withPngChunks(basePng(), [pngChunk('iCCP', cat(ascii('custom name'), Uint8Array.of(0, 0), zlib(iccProfile('Display P3')))), tEXt('parameters', 'p')]),
     'apng.png': withPngChunks(fixture('apng.png'), [tEXt('parameters', 'p')]),
     'progressive.jpg': withJpegSegments(fixture('progressive.jpg'), [jpegSegment(0xe1, cat(ascii('Exif\0\0'), richExif(6))), ...app11Segments(c2paStore({ padding: 200 }), 120)], ascii('tail')),
     'alpha.webp': webpFile([riffChunk('VP8X', vp8x), ...lossy.slice(1).map((c) => c.bytes), riffChunk('EXIF', richExif(6, true)), riffChunk('XMP ', ascii('<x/>'))]),

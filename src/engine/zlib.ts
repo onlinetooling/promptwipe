@@ -230,6 +230,32 @@ export function adler32(b: Uint8Array): number {
   return ((s << 16) | a) >>> 0;
 }
 
+/**
+ * A zlib stream of stored (uncompressed) blocks: deterministic, so a kept
+ * profile is rewritten from its decoded bytes and none of the original
+ * compressed bytes survive (security review 2026-11-08).
+ */
+export function zlibStored(data: Uint8Array): Uint8Array<ArrayBuffer> {
+  const blocks = Math.max(1, Math.ceil(data.length / 65535));
+  const out = new Uint8Array(2 + data.length + blocks * 5 + 4);
+  out[0] = 0x78;
+  out[1] = 0x01;
+  let o = 2;
+  for (let i = 0; i < blocks; i++) {
+    const part = data.subarray(i * 65535, (i + 1) * 65535);
+    out[o] = i === blocks - 1 ? 1 : 0;
+    out[o + 1] = part.length & 0xff;
+    out[o + 2] = part.length >>> 8;
+    out[o + 3] = ~part.length & 0xff;
+    out[o + 4] = (~part.length >>> 8) & 0xff;
+    out.set(part, o + 5);
+    o += 5 + part.length;
+  }
+  const sum = adler32(data);
+  out.set([sum >>> 24, (sum >>> 16) & 0xff, (sum >>> 8) & 0xff, sum & 0xff], o);
+  return out;
+}
+
 /** Inflates a zlib stream; null when it is not zlib or nothing decodes. */
 export function inflateZlib(src: Uint8Array, maxOut: number): ZlibResult | null {
   if (src.length < 2) return null;

@@ -1,9 +1,9 @@
-import { asciiBytes, be32, concat, crc32, decodeLatin1, indexOfNul, need, u32be } from './bytes';
+import { asciiBytes, be32, concat, crc32, decodeLatin1, equalBytes, indexOfNul, need, u32be } from './bytes';
 import { EngineError, malformed } from './errors';
 import { orientationTiff, readOrientation } from './exif';
 import { isIccProfile } from './icc';
 import { MAX_BLOCKS, MAX_ICC_BYTES } from './limits';
-import { inflateZlib } from './zlib';
+import { inflateZlib, zlibStored } from './zlib';
 import type { Block, BlockKind, Structure } from './types';
 import type { Parsed } from './parsed';
 
@@ -50,9 +50,10 @@ export const ICCP_NAME = 'ICC Profile';
 
 /**
  * A valid iCCP: 1-79 byte name, NUL, compression method 0, then a zlib stream
- * that ends exactly at the chunk end and holds one whole ICC profile, so no
- * byte can ride along (security review 2026-11-08). Returns the chunk data
- * with the fixed name.
+ * that ends exactly at the chunk end and holds one whole ICC profile. The
+ * chunk is rebuilt from the decoded profile (fixed name, stored zlib), so no
+ * original byte rides along (security review 2026-11-08). `rename` is false
+ * only when the chunk already is in that form.
  */
 function iccpProfile(b: Uint8Array, c: PngChunk): { data: Uint8Array<ArrayBuffer>; rename: boolean } | null {
   const end = c.dataStart + c.length;
@@ -61,8 +62,8 @@ function iccpProfile(b: Uint8Array, c: PngChunk): { data: Uint8Array<ArrayBuffer
   const compressed = b.subarray(nul + 2, end);
   const profile = inflateZlib(compressed, MAX_ICC_BYTES);
   if (!profile || !profile.complete || profile.end !== compressed.length || !isIccProfile(profile.bytes)) return null;
-  const name = decodeLatin1(b.subarray(c.dataStart, nul));
-  return { data: concat([asciiBytes(ICCP_NAME), new Uint8Array(2), compressed]), rename: name !== ICCP_NAME };
+  const data = concat([asciiBytes(ICCP_NAME), new Uint8Array(2), zlibStored(profile.bytes)]);
+  return { data, rename: !equalBytes(data, b.subarray(c.dataStart, end)) };
 }
 
 /** Removed chunks we can name more precisely than "other". */
@@ -176,7 +177,7 @@ export function parsePng(b: Uint8Array): Parsed {
         const iccp = c.type === 'iCCP' ? iccpProfile(b, c) : null;
         if (c.type === 'iCCP' && !iccp) drop(c, 'invalid');
         else if (iccp && iccp.rename) {
-          // The profile name is free text: write a fixed one (the profile itself is kept, D3).
+          // Rebuilt: fixed name (free text otherwise) and the profile re-encoded (kept, D3).
           iccData.set(c, iccp.data);
           blocks.push({ name: c.type, label: 'ICC profile', offset: c.offset, size: c.end - c.offset, kind: 'color', action: 'rewrite' });
           plan.push('iccp');
