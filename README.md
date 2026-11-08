@@ -13,7 +13,7 @@ pnpm dev        # local site
 pnpm test       # unit tests (vitest)
 pnpm typecheck
 pnpm build      # static site in dist/
-pnpm test:dist  # checks on dist/ (no inline script or style, CSP headers)
+pnpm test:dist  # checks on dist/: no inline script or style (CSP), SEO (titles, canonical, hreflang, JSON-LD, sitemap, links)
 pnpm serve:dist # serves dist/ with the headers of public/_headers (CSP), which `astro preview` ignores
 ```
 
@@ -21,8 +21,8 @@ pnpm serve:dist # serves dist/ with the headers of public/_headers (CSP), which 
 nothing is decoded or re-encoded.
 
 `src/ui/` is the tool page: drop, choose or paste one image, see what it holds, download the clean copy. Before the
-download is offered, the original and the output are both decoded by the browser and their sizes compared. Values
+download is offered, the original and the output are both decoded by the browser and their dimensions compared. Values
 read from a file only ever reach the page as text, and the page makes no network request.
 
-`cli/strip-image-metadata` is the command-line version (ImageMagick 7; PNG, JPEG, WebP, GIF). It re-encodes the
-image, unlike the web tool.
+Pages are listed in `src/i18n/routes.ts` (English at `/`, French under `/fr/` with translated addresses); the
+layout, the sitemap and `llms.txt` are built from that table, and the build fails if a page is missing from it.

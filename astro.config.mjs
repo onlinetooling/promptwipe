@@ -6,6 +6,9 @@ export default defineConfig({
   // Folder URLs with a trailing slash everywhere: Cloudflare Pages serves
   // /page/ from page/index.html, so canonical, sitemap and links all agree.
   trailingSlash: 'always',
+  // Lossless whitespace compression. Astro 7's default ('jsx') drops a line
+  // break next to an element, which glued words to links in wrapped prose.
+  compressHTML: true,
   // Strict CSP (design §3, review M1): no inline CSS or JS in pages, so
   // `style-src 'self'` and `script-src 'self'` hold. tests/dist checks it.
   build: { format: 'directory', inlineStylesheets: 'never' },

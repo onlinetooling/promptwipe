@@ -1,0 +1,151 @@
+---
+import Tool from '../../../components/Tool.astro';
+import Base from '../../../layouts/Base.astro';
+---
+<Base
+  lang="fr"
+  heading="Supprimer les métadonnées d’une photo et sa position GPS"
+  title="Supprimer les métadonnées d’une photo — PromptWipe"
+  description={'Voyez et supprimez les données EXIF et la position GPS d’une photo : appareil, date, lieu. Sans perte et gratuit, dans votre navigateur : rien n’est envoyé.'}
+>
+  <p class="lead">
+    Une photo de téléphone ou d’appareil photo enregistre en général où, quand et avec quel appareil elle a été
+    prise. PromptWipe vous montre ces informations, position GPS comprise, puis vous donne une copie nettoyée, sans
+    recompresser l’image. Rien ne quitte votre navigateur. Le HEIC de l’iPhone n’est pas encore pris en charge.
+  </p>
+  <Tool lang="fr" />
+  <div class="prose">
+    <h2>Quelles métadonnées contient une photo&nbsp;?</h2>
+    <p>
+      Surtout de l’EXIF, un ensemble de balises que l’appareil écrit au moment d’enregistrer l’image. La liste exacte
+      dépend de l’appareil et de ses réglages, mais une photo de téléphone contient souvent&nbsp;:
+    </p>
+    <ul>
+      <li>la marque et le modèle du téléphone ou de l’appareil, souvent aussi l’objectif&nbsp;;</li>
+      <li>la date et l’heure de la prise de vue, et celle de la dernière modification&nbsp;;</li>
+      <li>
+        la position GPS (latitude, longitude, souvent l’altitude et la direction) quand la localisation est activée
+        pour l’appareil photo&nbsp;;
+      </li>
+      <li>les réglages d’exposition et la version du logiciel ou du micrologiciel&nbsp;;</li>
+      <li>sur certains appareils, le numéro de série du boîtier ou de l’objectif&nbsp;;</li>
+      <li>
+        une note du fabricant (MakerNote)&nbsp;: un bloc privé, dans un format propre à chaque marque, qui peut contenir
+        d’autres réglages et identifiants&nbsp;;
+      </li>
+      <li>une petite miniature de l’image.</li>
+    </ul>
+    <p>
+      Les applications de retouche peuvent en ajouter, le plus souvent en XMP&nbsp;: le nom du logiciel et, pour
+      certaines, les étapes de retouche. Une photo passée par plusieurs applications peut garder une trace de chacune.
+    </p>
+    <p>
+      La miniature mérite un mot&nbsp;: c’est une petite image à part. Certains outils modifient la photo sans mettre à
+      jour sa miniature, si bien qu’il arrive qu’elle montre encore l’image telle qu’elle était avant un recadrage.
+    </p>
+
+    <h2>Pourquoi la position GPS compte-t-elle&nbsp;?</h2>
+    <p>
+      Parce qu’elle est précise. Les balises GPS d’une photo de téléphone situent la prise de vue à quelques mètres
+      près&nbsp;: une photo prise dans votre jardin ou votre salon donne votre adresse. Quelques photos suffisent pour
+      savoir où vous travaillez, où vont vos enfants à l’école ou quand vous êtes absent.
+    </p>
+    <p>
+      PromptWipe affiche la position trouvée avec cinq décimales (environ un mètre)&nbsp;: vous voyez exactement ce
+      que verrait un inconnu. Si le fichier contient des balises GPS illisibles, il vous signale quand même leur
+      présence.
+    </p>
+
+    <h2>Que retire PromptWipe, et que garde-t-il&nbsp;?</h2>
+    <p>
+      Il retire les métadonnées et garde tout ce qu’il faut pour voir la photo telle qu’elle est. Les données d’image
+      sont recopiées octet pour octet&nbsp;: aucune perte de qualité.
+    </p>
+    <p>Ce qui est retiré&nbsp;:</p>
+    <ul>
+      <li>l’EXIF, dont la position GPS, les dates, l’appareil, les numéros de série, la note du fabricant et la miniature&nbsp;;</li>
+      <li>le XMP, l’IPTC et les commentaires&nbsp;;</li>
+      <li>les Content Credentials (C2PA), si l’appareil ou une application en a ajouté&nbsp;;</li>
+      <li>
+        les images supplémentaires rangées dans le fichier&nbsp;: sur Android, la carte de gain HDR d’une photo Ultra
+        HDR (la photo peut alors paraître moins lumineuse sur un écran HDR) et la courte vidéo d’une photo animée
+        (Motion Photo). Le rapport vous le signale.
+      </li>
+    </ul>
+    <p>Ce qui est gardé&nbsp;:</p>
+    <ul>
+      <li>l’image elle-même, intacte&nbsp;: ni réencodage, ni redimensionnement&nbsp;;</li>
+      <li>
+        la rotation&nbsp;: les téléphones enregistrent souvent la photo couchée, avec une balise qui indique comment la
+        tourner. PromptWipe réécrit un tout petit bloc EXIF qui ne contient que cette rotation, pour que la photo ne
+        s’affiche pas de travers&nbsp;;
+      </li>
+      <li>
+        le profil de couleur (son nom figure dans le rapport, par exemple Display P3), pour que les couleurs ne changent
+        pas.
+      </li>
+    </ul>
+    <p>
+      Avant de proposer le téléchargement, PromptWipe décode la photo nettoyée et vérifie qu’elle a les mêmes dimensions
+      que l’original. Le nouveau fichier garde le nom d’origine suivi de <code>-clean</code>. Un nom comme
+      <code>IMG_0001</code>, ou qui contient une date, en dit lui aussi un peu&nbsp;: renommez le fichier si besoin.
+    </p>
+
+    <h2>Pourquoi ne pas faire une capture d’écran ou réenregistrer la photo&nbsp;?</h2>
+    <p>
+      Ces deux méthodes fabriquent une nouvelle image au lieu de nettoyer l’originale. Une capture d’écran n’a que la
+      résolution de votre écran et peut attraper d’autres éléments affichés&nbsp;; réenregistrer un JPEG dans un
+      logiciel le recompresse, avec un peu de perte à chaque fois, et certains logiciels recopient de toute façon les
+      métadonnées dans le nouveau fichier. Retirer directement les blocs de métadonnées garde la photo exactement telle
+      qu’elle était.
+    </p>
+
+    <h2>Comment nettoyer une photo d’iPhone (HEIC)&nbsp;?</h2>
+    <p>
+      PromptWipe ne lit pas encore le HEIC. Exportez d’abord la photo en JPEG, ou réglez l’iPhone pour qu’il prenne ses
+      photos en JPEG&nbsp;: Réglages › Appareil photo › Formats › Le plus compatible. Les nouvelles photos sont alors
+      enregistrées en JPEG, que PromptWipe sait traiter.
+    </p>
+    <p>
+      Si vous voulez que le HEIC soit pris en charge, utilisez le lien «&nbsp;Demander ce format&nbsp;» qui s’affiche
+      quand le fichier est refusé. PromptWipe accepte les fichiers PNG, JPEG et WebP jusqu’à 50&nbsp;Mo, une image à la
+      fois.
+    </p>
+
+    <h2>Les réseaux sociaux ne retirent-ils pas déjà les métadonnées&nbsp;?</h2>
+    <p>
+      Beaucoup de plateformes et de messageries réencodent les photos à l’envoi et suppriment souvent les métadonnées au
+      passage, mais cela varie d’un service à l’autre et change avec le temps. Vous ne voyez pas non plus ce qu’elles
+      gardent sur leurs propres serveurs.
+    </p>
+    <p>
+      D’autres façons de partager gardent en général le fichier d’origine, métadonnées comprises&nbsp;: une pièce jointe
+      à un e-mail, une photo envoyée «&nbsp;en tant que document&nbsp;», un lien de stockage en ligne, un forum ou une
+      annonce qui conserve l’original. Nettoyer la photo avant qu’elle quitte votre appareil reste le moyen le plus sûr
+      de savoir ce que vous partagez.
+    </p>
+
+    <h2>Ma photo est-elle envoyée quelque part&nbsp;?</h2>
+    <p>
+      Non. PromptWipe lit et nettoie le fichier dans cette page, sur votre appareil&nbsp;; aucun serveur ne reçoit les
+      images, et l’outil fonctionne hors connexion une fois la page chargée. Voyez
+      <a href="/fr/comment-ca-marche/">comment ça marche</a> pour le vérifier vous-même, et la
+      <a href="/fr/confidentialite/">page confidentialité</a>.
+    </p>
+    <p>
+      Le même outil traite les images IA&nbsp;: <a href="/fr/">supprimer les métadonnées d’une image IA</a>, le
+      <a href="/fr/supprimer-workflow-comfyui/">workflow ComfyUI</a>, les
+      <a href="/fr/supprimer-metadonnees-stable-diffusion/">réglages Stable Diffusion</a> ou les
+      <a href="/fr/supprimer-c2pa-content-credentials/">Content Credentials</a>.
+    </p>
+
+    <p class="sources">
+      Sources&nbsp;: Apple,
+      <a href="https://support.apple.com/fr-fr/116944">Utilisation de fichiers multimédias HEIF ou HEVC sur les appareils Apple</a>&nbsp;;
+      en anglais&nbsp;: référence des balises du projet ExifTool, <a href="https://exiftool.org/TagNames/EXIF.html">EXIF</a>
+      et <a href="https://exiftool.org/TagNames/GPS.html">GPS</a>&nbsp;; Android,
+      <a href="https://developer.android.com/media/platform/hdr-image-format">Ultra HDR Image Format</a> et
+      <a href="https://developer.android.com/media/platform/motion-photo-format">Motion Photo format</a>.
+    </p>
+  </div>
+</Base>

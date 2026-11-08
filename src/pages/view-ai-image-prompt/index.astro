@@ -1,0 +1,132 @@
+---
+import Tool from '../../components/Tool.astro';
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  lang="en"
+  heading="View the prompt and metadata of an AI image"
+  title="View the Prompt of an AI Image (PNG Info) — PromptWipe"
+  description="Read the prompt, settings, ComfyUI workflow, EXIF, XMP and C2PA data of an AI image, like PNG Info. Free, in your browser: nothing is uploaded."
+>
+  <p class="lead">
+    Drop an image to read what it carries: the prompt and settings from AUTOMATIC1111, Forge, Fooocus or InvokeAI, a
+    ComfyUI workflow, EXIF and GPS, XMP and Content Credentials. It works like the PNG Info tab, in your browser, and
+    leaves your file unchanged. It reads metadata only: it does not detect invisible watermarks.
+  </p>
+  <Tool lang="en" />
+  <div class="prose">
+    <h2>How do I see the prompt of an AI image?</h2>
+    <p>
+      Drop the file above, click to choose it, or paste it. A short verdict comes first, then “What the image
+      contained”, which opens with the prompt and generation settings. Each text is shown under the name of its key, with who wrote it when
+      the key is known: <code>parameters</code> for AUTOMATIC1111, Forge or Fooocus, <code>prompt</code> and
+      <code>workflow</code> for ComfyUI, <code>invokeai_metadata</code> for InvokeAI.
+    </p>
+    <p>
+      Long texts get their own box with a Copy button, which copies the full text even when the page shows only the
+      first 20,000 characters. JSON, such as a ComfyUI workflow, and texts over 2,000 characters start folded: click to
+      open them. PNG, JPEG and WebP files up to 50 MB are read; AVIF, HEIC and GIF are not supported yet, and the tool
+      tells you so.
+    </p>
+
+    <h2>What does each part of the report mean?</h2>
+    <ul>
+      <li>
+        <strong>Prompt and generation settings</strong>: the text blocks of a PNG, such as the A1111 infotext (prompt,
+        negative prompt, seed, sampler, model and LoRA hashes) or a ComfyUI workflow. When A1111 saves a JPEG or WebP,
+        the same text sits in EXIF instead, under “User comment”.
+      </li>
+      <li>
+        <strong>EXIF</strong>: camera maker and model, software, dates, description, and the GPS position as latitude
+        and longitude when there is one. A maker note or an embedded thumbnail is listed with its size only.
+      </li>
+      <li>
+        <strong>XMP</strong>: the tool that created the file and its digital source type. The IPTC vocabulary uses
+        <code>trainedAlgorithmicMedia</code> for “created using generative AI” and
+        <code>compositeWithTrainedAlgorithmicMedia</code> for an image edited with it, such as an inpainted photo. A
+        description, a credit or a link to Content Credentials can appear here too.
+      </li>
+      <li>
+        <strong>Content Credentials (C2PA)</strong>: how many manifests the file holds and their size, the tool it says
+        it was made with, and the signer as declared. PromptWipe does not check the signature; the Content Authenticity
+        Initiative’s <a href="https://verify.contentauthenticity.org/">Verify</a> site does.
+      </li>
+      <li>
+        <strong>Other data</strong>: an HDR gain map, secondary images such as a depth map, the short video of a Motion
+        Photo, or data hidden after the end of the image.
+      </li>
+    </ul>
+    <p>
+      Below come “What was removed” and “What was kept”, then a folded list of every block of the file in order, with
+      its position and size, for the curious.
+    </p>
+
+    <h2>Can I read a ComfyUI workflow without opening ComfyUI?</h2>
+    <p>
+      Yes. ComfyUI stores two JSON texts in its PNG files: <code>prompt</code>, the graph as it ran, and
+      <code>workflow</code>, the graph as you see it on the canvas. The report shows both, folded, with the number of
+      nodes in the workflow. Copy them into a text editor to read the node settings, the model and LoRA file names, and
+      every prompt in the graph. The page on <a href="/remove-comfyui-workflow-from-image/">removing the ComfyUI
+      workflow</a> explains what it reveals.
+    </p>
+
+    <h2>Does viewing the metadata change my file?</h2>
+    <p>
+      No. Your browser reads a copy of the file in memory; the file on your disk is never touched. PromptWipe also
+      prepares a cleaned copy and offers it as a separate download, named after your file with <code>-clean</code>
+      added. If you only wanted to read, ignore it. Nothing is stored: close the tab and the image is gone from the page.
+    </p>
+
+    <h2>Why does my image show no metadata?</h2>
+    <p>Usually because it was removed before the image reached you. Common reasons:</p>
+    <ul>
+      <li>
+        Social networks and messaging apps often re-encode uploaded images and drop their metadata on the way. A file
+        saved from such a site has often lost its prompt already.
+      </li>
+      <li>
+        A pasted image often loses its metadata on the way to the clipboard. Drop or choose the original file instead.
+      </li>
+      <li>A screenshot carries none of the original file’s metadata.</li>
+      <li>
+        The tool did not write any. A1111 has a setting to turn its infotext off, ComfyUI has a server option that
+        stops it saving the workflow, and Fooocus saves metadata only when you turn it on.
+      </li>
+    </ul>
+    <p>
+      An empty report does not mean the image was not made with AI. Invisible watermarks such as SynthID are part of
+      the pixels, not of the metadata, and PromptWipe neither detects nor removes them.
+    </p>
+
+    <h2>Is it the same as the PNG Info tab?</h2>
+    <p>
+      Same idea, different place. AUTOMATIC1111’s PNG Info tab reads the infotext inside the web UI and can send the
+      settings back to txt2img. PromptWipe needs nothing installed and also names ComfyUI, InvokeAI and Fooocus keys,
+      lists EXIF fields, XMP and Content Credentials, and shows every block of the file. When you decide to share the
+      image, the same page removes all of it: see <a href="/">remove metadata from AI images</a> and the page on
+      <a href="/remove-stable-diffusion-metadata/">Stable Diffusion metadata</a>.
+    </p>
+
+    <h2>Is my image uploaded to read it?</h2>
+    <p>
+      No. The reading happens in the page itself. The site’s security policy forbids the page from sending data
+      anywhere, so the tool keeps working once the page is loaded, even offline. You can check it in your browser’s
+      developer tools: the network tab stays empty while the image is read. <a href="/how-it-works/">How it works</a>
+      and the <a href="/privacy/">privacy page</a> say more.
+    </p>
+    <p>
+      To see which tools write which fields, read the <a href="/guides/what-metadata-do-ai-images-contain/">guide to AI
+      image metadata</a>. For phone photos, see <a href="/remove-photo-metadata-gps/">photo metadata and GPS</a>; for
+      provenance data, <a href="/remove-c2pa-content-credentials/">C2PA Content Credentials</a>.
+    </p>
+
+    <p class="sources">
+      Sources: IPTC <a href="https://cv.iptc.org/newscodes/digitalsourcetype/">Digital Source Type vocabulary</a>;
+      <a href="https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html">C2PA 2.2
+      specification</a>; AUTOMATIC1111
+      <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/images.py">modules/images.py</a>;
+      ComfyUI <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/nodes.py">nodes.py</a> and
+      <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy/cli_args.py">comfy/cli_args.py</a>.
+    </p>
+  </div>
+</Base>

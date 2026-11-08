@@ -1,0 +1,135 @@
+---
+import Tool from '../../components/Tool.astro';
+import Base from '../../layouts/Base.astro';
+---
+<Base
+  lang="en"
+  heading="Remove metadata and GPS location from a photo"
+  title="Remove Photo Metadata and GPS Location — PromptWipe"
+  description="See and remove the EXIF data and GPS location in a photo: camera, date, place. Lossless and free, in your browser: nothing is uploaded."
+>
+  <p class="lead">
+    A photo from a phone or camera usually records where and when it was taken, and with which device. PromptWipe
+    shows that data, including the GPS position, then gives you a copy without it. The picture is not re-compressed
+    and stays the right way up. Nothing leaves your browser. iPhone HEIC photos are not supported yet.
+  </p>
+  <Tool lang="en" />
+  <div class="prose">
+    <h2>What metadata does a photo contain?</h2>
+    <p>
+      Mostly EXIF, a block of tags the camera writes when it saves the picture. The exact list depends on the device
+      and its settings, but a phone photo commonly carries:
+    </p>
+    <ul>
+      <li>the maker and model of the phone or camera, and often the lens;</li>
+      <li>the date and time the photo was taken, and when it was last modified;</li>
+      <li>the GPS position (latitude, longitude, often altitude and direction) when location is turned on for the camera;</li>
+      <li>the exposure settings and the software or firmware version;</li>
+      <li>on some cameras, the serial number of the body or lens;</li>
+      <li>
+        a maker note: a private block in each manufacturer’s own format, which can hold more settings and identifiers;
+      </li>
+      <li>a small embedded thumbnail of the picture.</li>
+    </ul>
+    <p>
+      Editing apps can add more, usually as XMP: the software used, and with some apps the editing steps. A photo that
+      went through several apps can carry traces of each of them.
+    </p>
+    <p>
+      The thumbnail deserves a word: it is a separate small image. Some tools update the photo without updating its
+      thumbnail, so in some cases the thumbnail still shows the picture as it was before a crop.
+    </p>
+
+    <h2>Why does the GPS position matter?</h2>
+    <p>
+      Because it is precise. GPS tags in a phone photo can locate the shot to within a few metres: a photo taken in
+      your garden or living room points to your home address. A handful of photos can show where you work, where your
+      children go to school or when you are away.
+    </p>
+    <p>
+      PromptWipe shows the position it finds with five decimals (about a metre), so you see exactly what a stranger
+      would. If the file has GPS tags it cannot read, it still tells you they are there.
+    </p>
+
+    <h2>What does PromptWipe remove, and what does it keep?</h2>
+    <p>
+      It removes the metadata and keeps everything you need to see the photo as it is. The image data is copied byte
+      for byte, so there is no quality loss.
+    </p>
+    <p>Removed:</p>
+    <ul>
+      <li>EXIF, including GPS, dates, device, serial numbers, the maker note and the thumbnail;</li>
+      <li>XMP, IPTC and comments;</li>
+      <li>Content Credentials (C2PA), if the camera or an app added them;</li>
+      <li>
+        extra images stored in the file: on Android, the HDR gain map of an Ultra HDR photo (the photo may then look
+        less bright on an HDR screen) and the short video of a Motion Photo. The report tells you when this happens.
+      </li>
+    </ul>
+    <p>Kept:</p>
+    <ul>
+      <li>the picture, unchanged: no re-encoding, no resizing;</li>
+      <li>
+        the rotation: phones often store a photo sideways with a tag that says how to turn it. PromptWipe writes back a
+        tiny EXIF block that contains that rotation and nothing else, so the photo is not shown sideways;
+      </li>
+      <li>the colour profile (its name is shown in the report, for example Display P3), so the colours do not shift.</li>
+    </ul>
+    <p>
+      Before offering the download, PromptWipe decodes the cleaned photo and checks it has the same dimensions as the
+      original. The new file is named after the original with <code>-clean</code> added. A name like
+      <code>IMG_0001</code> or one with a date in it says something too: rename the file if needed.
+    </p>
+
+    <h2>Why not just take a screenshot or re-save the photo?</h2>
+    <p>
+      Both make a new image instead of cleaning the original. A screenshot only has your screen’s resolution and can
+      catch other parts of the screen; re-saving in an editor re-compresses a JPEG, losing a little quality each time,
+      and some editors copy the metadata into the new file anyway. Removing the metadata blocks directly keeps the
+      photo exactly as it was.
+    </p>
+
+    <h2>How do I clean an iPhone photo (HEIC)?</h2>
+    <p>
+      PromptWipe does not read HEIC files yet. Export the photo as JPEG first, or set the iPhone to take JPEG photos:
+      Settings › Camera › Formats › Most Compatible. New photos are then saved as JPEG, which PromptWipe handles.
+    </p>
+    <p>
+      If you would like HEIC support, use the “Request this format” link shown when the file is refused. PNG, JPEG and
+      WebP files up to 50 MB are supported, one image at a time.
+    </p>
+
+    <h2>Don’t social networks remove the metadata anyway?</h2>
+    <p>
+      Many platforms and messaging apps re-encode photos on upload and often drop the metadata on the way, but it
+      varies from one service to another and changes over time. You cannot see what they keep on their own servers
+      either.
+    </p>
+    <p>
+      Other ways of sharing generally keep the original file, metadata included: an e-mail attachment, a file sent “as
+      a document”, a cloud storage link, a forum or a marketplace listing that keeps the original. Cleaning the photo
+      before it leaves your device is the surest way to know what you share.
+    </p>
+
+    <h2>Is my photo uploaded?</h2>
+    <p>
+      No. PromptWipe reads and cleans the file inside this page, on your device; no server receives images, and it
+      keeps working offline once the page has loaded. See <a href="/how-it-works/">how it works</a> to check it
+      yourself, and the <a href="/privacy/">privacy page</a>.
+    </p>
+    <p>
+      The same tool handles AI images: <a href="/">remove AI image metadata</a>, the
+      <a href="/remove-comfyui-workflow-from-image/">ComfyUI workflow</a>,
+      <a href="/remove-stable-diffusion-metadata/">Stable Diffusion settings</a> or
+      <a href="/remove-c2pa-content-credentials/">Content Credentials</a>.
+    </p>
+
+    <p class="sources">
+      Sources: tag reference of the ExifTool project, <a href="https://exiftool.org/TagNames/EXIF.html">EXIF tags</a> and
+      <a href="https://exiftool.org/TagNames/GPS.html">GPS tags</a>; Apple,
+      <a href="https://support.apple.com/en-us/116944">Using HEIF or HEVC media on Apple devices</a>; Android,
+      <a href="https://developer.android.com/media/platform/hdr-image-format">Ultra HDR Image Format</a> and
+      <a href="https://developer.android.com/media/platform/motion-photo-format">Motion Photo format</a>.
+    </p>
+  </div>
+</Base>

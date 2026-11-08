@@ -1,0 +1,171 @@
+---
+import Tool from '../../../components/Tool.astro';
+import Base from '../../../layouts/Base.astro';
+
+const example = `{
+  "3": {
+    "class_type": "KSampler",
+    "inputs": { "seed": 812345678901234, "steps": 30, "cfg": 6.5, "sampler_name": "dpmpp_2m" }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "clients/acme/style-marque-v3.safetensors" }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "portrait of a woman in a red coat, rainy street, 35mm" }
+  }
+}`;
+---
+<Base
+  lang="fr"
+  heading="Supprimer le workflow ComfyUI d’une image"
+  title="Supprimer le workflow ComfyUI d’une image — PromptWipe"
+  description={'Une image ComfyUI contient tout le workflow : prompts, seeds, modèles, LoRA. Voyez-le, puis retirez-le dans votre navigateur. Gratuit, rien n’est envoyé.'}
+>
+  <p class="lead">
+    Par défaut, chaque image enregistrée par ComfyUI contient le workflow complet qui l’a produite&nbsp;: nœuds,
+    prompts, seeds, noms des modèles et des LoRA. PromptWipe vous montre ces données, puis vous donne une copie qui ne
+    les contient plus, pixels intacts. Tout se passe dans votre navigateur. Les filigranes invisibles inscrits dans les
+    pixels restent.
+  </p>
+  <Tool lang="fr" />
+  <div class="prose">
+    <h2>Une image ComfyUI contient-elle le workflow&nbsp;?</h2>
+    <p>
+      Oui, sauf si l’enregistrement des métadonnées a été désactivé. Le nœud Save Image écrit deux textes dans le
+      PNG&nbsp;: <code>prompt</code>, le graphe tel que ComfyUI l’exécute, et <code>workflow</code>, le graphe tel
+      que vous le voyez sur le canevas, disposition comprise. Les deux sont du JSON en clair.
+    </p>
+    <p>
+      Dans le code source, le nœud ajoute <code>prompt</code> dans un bloc texte du PNG, puis un bloc pour chaque clé
+      reçue dans <code>extra_pnginfo</code>&nbsp;: c’est de là que vient <code>workflow</code>, et c’est là que des
+      nœuds personnalisés peuvent glisser leurs propres champs. La documentation de ComfyUI présente cela comme le fait
+      d’enregistrer l’image «&nbsp;avec sa recette&nbsp;». L’image a le même aspect&nbsp;; la recette est simplement
+      rangée à côté des pixels.
+    </p>
+
+    <h2>Qu’apprend-on en ouvrant une image ComfyUI&nbsp;?</h2>
+    <p>
+      Tout ce qu’il faut pour reconstruire votre montage. Il suffit de glisser le PNG sur le canevas de ComfyUI, ou de
+      l’ouvrir par File › Open&nbsp;: ComfyUI reconstruit le workflow à partir du champ <code>workflow</code>. N’importe
+      qui à qui vous envoyez le fichier peut faire de même.
+    </p>
+    <p>On y trouve notamment&nbsp;:</p>
+    <ul>
+      <li>les prompts positif et négatif, mot pour mot&nbsp;;</li>
+      <li>la seed, le sampler, le scheduler, le nombre d’étapes, le CFG et la taille, de quoi refaire l’image&nbsp;;</li>
+      <li>
+        les noms de fichiers de vos checkpoints, LoRA, upscalers et images d’entrée, qui peuvent contenir des noms de
+        dossiers (le nom d’un client ou d’un projet, par exemple)&nbsp;;
+      </li>
+      <li>les paquets de nœuds personnalisés que vous utilisez, avec leurs réglages&nbsp;;</li>
+      <li>la disposition de vos nœuds&nbsp;: groupes, notes et titres écrits sur le canevas.</li>
+    </ul>
+    <p>Voici un extrait raccourci et inventé de ce que contient une entrée <code>prompt</code>&nbsp;:</p>
+    <pre><code>{example}</code></pre>
+    <p>
+      Une vraie entrée est en général bien plus longue, et l’entrée <code>workflow</code>, qui garde aussi la
+      disposition, l’est encore plus. Si vous partagez vos workflows exprès, c’est pratique. Si vous vouliez seulement
+      montrer une image, c’est une fuite.
+    </p>
+
+    <h2>Que montre et que retire PromptWipe&nbsp;?</h2>
+    <p>
+      PromptWipe affiche chaque texte trouvé avec le nom de sa clé. Un workflow ComfyUI est signalé avec son nombre de
+      nœuds. Les longues valeurs JSON sont repliées, avec un bouton Copier&nbsp;: vous voyez ce que vous alliez
+      partager avant de le retirer.
+    </p>
+    <p>Quand vous nettoyez le fichier, PromptWipe&nbsp;:</p>
+    <ul>
+      <li>
+        retire tous les blocs texte du PNG (<code>prompt</code>, <code>workflow</code> et toute clé ajoutée par un nœud
+        personnalisé), ainsi que l’EXIF, le XMP, les Content Credentials (C2PA) et l’horodatage s’il y en a&nbsp;;
+      </li>
+      <li>
+        recopie les données d’image octet pour octet&nbsp;: aucun réencodage, l’image est identique et le profil de
+        couleur est conservé&nbsp;;
+      </li>
+      <li>décode le résultat et vérifie qu’il a les mêmes dimensions que l’original avant de proposer le téléchargement.</li>
+    </ul>
+    <p>
+      Le fichier téléchargé garde le nom d’origine suivi de <code>-clean</code>. Save Image nomme ses fichiers
+      <code>ComfyUI_00042_.png</code> par défaut, et ce nom suffit à dire quel outil a produit l’image&nbsp;: renommez
+      le fichier si cela compte pour vous.
+    </p>
+
+    <h2>Et les WebP animés, les PNG animés, l’AVIF&nbsp;?</h2>
+    <p>
+      Les autres nœuds d’enregistrement de ComfyUI rangent les mêmes données ailleurs. PromptWipe nettoie les PNG et
+      WebP animés&nbsp;; l’AVIF n’est pas encore pris en charge.
+    </p>
+    <ul>
+      <li>
+        <strong>PNG animé</strong>&nbsp;: le workflow est dans des blocs texte, comme dans un PNG fixe. PromptWipe les
+        retire et garde toutes les images de l’animation.
+      </li>
+      <li>
+        <strong>WebP animé</strong>&nbsp;: ComfyUI écrit les données dans des balises EXIF, avec <code>prompt:</code>
+        suivi du JSON dans la balise prévue pour le modèle de l’appareil photo, et les autres clés dans les balises
+        précédentes, à commencer par la marque de l’appareil. C’est pourquoi le rapport de PromptWipe peut afficher votre
+        workflow sous «&nbsp;Modèle de l’appareil (Model)&nbsp;». Le bloc EXIF est retiré en entier&nbsp;; l’animation
+        est conservée.
+      </li>
+      <li>
+        <strong>AVIF</strong>&nbsp;: ComfyUI écrit aussi le workflow dans les fichiers AVIF, en EXIF. PromptWipe refuse
+        l’AVIF pour l’instant et propose un lien «&nbsp;Demander ce format&nbsp;»&nbsp;: dites-nous si vous en avez
+        besoin.
+      </li>
+    </ul>
+    <p>
+      Les vidéos (MP4, WebM) portent le workflow dans les balises de leur conteneur&nbsp;; PromptWipe ne traite que les
+      images, fixes ou animées.
+    </p>
+
+    <h2>Comment empêcher ComfyUI d’enregistrer le workflow&nbsp;?</h2>
+    <p>
+      ComfyUI a une option de serveur pour cela. Dans ComfyUI Desktop, elle se trouve dans Settings ›
+      Server-Config&nbsp;: «&nbsp;Disable saving prompt metadata in files&nbsp;». Une fois activée, les nœuds
+      d’enregistrement intégrés n’écrivent plus ni prompt ni workflow.
+    </p>
+    <p>Deux choses à savoir avant de l’activer&nbsp;:</p>
+    <ul>
+      <li>
+        Elle vaut pour tous les fichiers enregistrés ensuite&nbsp;: vous ne pourrez plus recharger vos propres workflows
+        en glissant vos images. Beaucoup préfèrent garder les métadonnées, conserver les originaux pour eux et ne
+        partager que des copies nettoyées.
+      </li>
+      <li>
+        Les nœuds d’enregistrement personnalisés suivent parfois leurs propres règles et peuvent écrire d’autres
+        métadonnées. Vérifiez un fichier de chaque nœud que vous utilisez&nbsp;: déposez-le sur cette page et regardez
+        ce qui ressort.
+      </li>
+    </ul>
+    <p>
+      PromptWipe ne modifie jamais votre fichier d’origine&nbsp;: il vous donne une nouvelle copie nettoyée et laisse
+      l’original où il est, workflow compris.
+    </p>
+
+    <h2>Mon image est-elle envoyée quelque part&nbsp;?</h2>
+    <p>
+      Non. Le fichier est lu et nettoyé par du code qui tourne dans cette page, sur votre appareil. Aucun serveur ne
+      reçoit les images, et la page continue de fonctionner hors connexion une fois chargée.
+      <a href="/fr/comment-ca-marche/">Comment ça marche</a> explique comment le vérifier vous-même.
+    </p>
+    <p>
+      Voir aussi&nbsp;: <a href="/fr/voir-prompt-image-ia/">voir le prompt d’une image IA</a>,
+      <a href="/fr/supprimer-metadonnees-stable-diffusion/">les métadonnées Stable Diffusion</a> (AUTOMATIC1111, Forge,
+      Fooocus, InvokeAI) et <a href="/fr/guides/metadonnees-images-ia/">les métadonnées des images IA</a>.
+    </p>
+
+    <p class="sources">
+      Sources (en anglais)&nbsp;: documentation de ComfyUI,
+      <a href="https://docs.comfy.org/development/api-development/workflow-metadata">Workflow metadata in output files</a>&nbsp;;
+      code source de ComfyUI&nbsp;: <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/nodes.py">nodes.py</a>
+      (Save Image), <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy_api/latest/_ui.py">_ui.py</a>
+      (PNG et WebP animés), <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy_extras/nodes_images.py">comfy_extras/nodes_images.py</a> (AVIF),
+      <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy/cli_args.py">cli_args.py</a>
+      (option de serveur).
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,20 @@
+---
+// Served by Cloudflare Pages with a 404 status for any unknown address (a
+// top-level 404.html also stops Pages from answering unknown paths with the
+// home page). Outside the route table: no canonical, not indexed.
+import Base from '../layouts/Base.astro';
+import { HOME } from '../i18n/routes';
+---
+<Base
+  lang="en"
+  notFound
+  heading="Page not found"
+  title="Page not found — PromptWipe"
+  description="This address does not exist on PromptWipe. Go to the tool that removes metadata from AI images, in your browser."
+>
+  <p class="lead">This address does not exist. The tool is on the <a href={HOME.en}>home page</a>.</p>
+  <section lang="fr" aria-labelledby="fr-title">
+    <h2 id="fr-title">Page introuvable</h2>
+    <p>Cette adresse n’existe pas. L’outil est sur la <a href={HOME.fr} hreflang="fr">page d’accueil en français</a>.</p>
+  </section>
+</Base>

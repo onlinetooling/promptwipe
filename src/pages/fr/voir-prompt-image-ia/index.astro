@@ -1,0 +1,140 @@
+---
+import Tool from '../../../components/Tool.astro';
+import Base from '../../../layouts/Base.astro';
+---
+<Base
+  lang="fr"
+  heading="Voir le prompt et les métadonnées d’une image IA"
+  title="Voir le prompt d’une image IA (PNG Info) — PromptWipe"
+  description={'Lisez le prompt, les réglages, le workflow ComfyUI, l’EXIF, le XMP et le C2PA d’une image IA, comme PNG Info. Gratuit, dans le navigateur : rien n’est envoyé.'}
+>
+  <p class="lead">
+    Déposez une image pour lire ce qu’elle contient&nbsp;: le prompt et les réglages d’AUTOMATIC1111, de Forge, de
+    Fooocus ou d’InvokeAI, un workflow ComfyUI, l’EXIF et la position GPS, le XMP et les Content Credentials. Comme
+    l’onglet PNG Info, mais dans votre navigateur, sans modifier votre fichier. L’outil lit les métadonnées
+    seulement&nbsp;: il ne détecte pas les filigranes invisibles.
+  </p>
+  <Tool lang="fr" />
+  <div class="prose">
+    <h2>Comment voir le prompt d’une image IA&nbsp;?</h2>
+    <p>
+      Déposez le fichier ci-dessus, cliquez pour le choisir ou collez-le. Un court verdict s’affiche d’abord, puis la
+      partie «&nbsp;Ce que contenait l’image&nbsp;», qui commence par le prompt et les réglages de génération. Chaque
+      texte apparaît sous le nom de sa clé, avec son auteur quand la clé est connue&nbsp;: <code>parameters</code> pour
+      AUTOMATIC1111, Forge ou Fooocus, <code>prompt</code> et <code>workflow</code> pour ComfyUI,
+      <code>invokeai_metadata</code> pour InvokeAI.
+    </p>
+    <p>
+      Les textes longs ont leur propre cadre, avec un bouton Copier qui copie le texte entier, même quand la page n’en
+      affiche que les 20&nbsp;000 premiers caractères. Le JSON, comme un workflow ComfyUI, et les textes de plus de
+      2&nbsp;000 caractères sont repliés&nbsp;: cliquez pour les ouvrir. L’outil lit les PNG, JPEG et WebP jusqu’à
+      50&nbsp;Mo&nbsp;; il ne prend pas encore en charge l’AVIF, le HEIC ni le GIF, et il le dit.
+    </p>
+
+    <h2>Que veut dire chaque partie du rapport&nbsp;?</h2>
+    <ul>
+      <li>
+        <strong>Prompt et réglages de génération</strong>&nbsp;: les blocs de texte d’un PNG, comme l’infotext
+        d’A1111 (prompt, prompt négatif, seed, sampler, empreintes du modèle et des LoRA) ou un workflow ComfyUI. Quand
+        A1111 enregistre un JPEG ou un WebP, ce même texte se trouve dans l’EXIF, sous «&nbsp;Commentaire&nbsp;».
+      </li>
+      <li>
+        <strong>EXIF</strong>&nbsp;: marque et modèle de l’appareil, logiciel, dates, description, et la position GPS
+        en latitude et longitude quand il y en a une. Une note du fabricant (MakerNote) ou une miniature intégrée
+        n’apparaissent qu’avec leur taille.
+      </li>
+      <li>
+        <strong>XMP</strong>&nbsp;: l’outil qui a créé le fichier et son type de source numérique. Le vocabulaire de
+        l’IPTC emploie <code>trainedAlgorithmicMedia</code> pour une image «&nbsp;créée par IA générative&nbsp;» et
+        <code>compositeWithTrainedAlgorithmicMedia</code> pour une image retouchée avec, comme une photo complétée par
+        inpainting. On peut aussi y trouver une description, un crédit ou un lien vers des Content Credentials.
+      </li>
+      <li>
+        <strong>Content Credentials (C2PA)</strong>&nbsp;: le nombre de manifestes et leur taille, l’outil avec lequel
+        l’image dit avoir été créée et le signataire déclaré. PromptWipe ne vérifie pas la signature&nbsp;; le site
+        <a href="https://verify.contentauthenticity.org/">Verify</a> de la Content Authenticity Initiative le fait.
+      </li>
+      <li>
+        <strong>Autres données</strong>&nbsp;: une carte de gain HDR, des images secondaires comme une carte de
+        profondeur, la courte vidéo d’une photo animée (Motion Photo), ou des données cachées après la fin de l’image.
+      </li>
+    </ul>
+    <p>
+      Viennent ensuite «&nbsp;Ce qui a été retiré&nbsp;» et «&nbsp;Ce qui a été gardé&nbsp;», puis, repliée, la liste
+      de tous les blocs du fichier dans l’ordre, avec leur position et leur taille, pour les curieux.
+    </p>
+
+    <h2>Peut-on lire un workflow ComfyUI sans ouvrir ComfyUI&nbsp;?</h2>
+    <p>
+      Oui. ComfyUI range deux textes JSON dans ses PNG&nbsp;: <code>prompt</code>, le graphe tel qu’il a tourné, et
+      <code>workflow</code>, le graphe tel que vous le voyez sur le canevas. Le rapport affiche les deux, repliés, avec
+      le nombre de nœuds du workflow. Copiez-les dans un éditeur de texte pour lire les réglages des nœuds, les noms de
+      fichiers des modèles et des LoRA, et tous les prompts du graphe. La page
+      <a href="/fr/supprimer-workflow-comfyui/">supprimer le workflow ComfyUI</a> explique ce qu’il révèle.
+    </p>
+
+    <h2>Lire les métadonnées modifie-t-il mon fichier&nbsp;?</h2>
+    <p>
+      Non. Votre navigateur lit une copie du fichier en mémoire&nbsp;; le fichier sur votre disque n’est jamais touché.
+      PromptWipe prépare aussi une copie nettoyée et la propose en téléchargement séparé, sous le nom de votre fichier
+      suivi de <code>-clean</code>. Si vous vouliez seulement lire, ignorez-la. Rien n’est conservé&nbsp;: fermez
+      l’onglet et l’image disparaît de la page.
+    </p>
+
+    <h2>Pourquoi mon image n’affiche-t-elle aucune métadonnée&nbsp;?</h2>
+    <p>Le plus souvent, parce qu’elles ont été retirées avant que l’image vous parvienne. Les cas fréquents&nbsp;:</p>
+    <ul>
+      <li>
+        Les réseaux sociaux et les messageries réencodent souvent les images envoyées et en perdent les métadonnées au
+        passage. Un fichier récupéré sur un tel site a souvent déjà perdu son prompt.
+      </li>
+      <li>
+        Une image collée perd souvent ses métadonnées en passant par le presse-papiers. Déposez ou choisissez plutôt le
+        fichier d’origine.
+      </li>
+      <li>Une capture d’écran ne garde aucune métadonnée du fichier d’origine.</li>
+      <li>
+        L’outil n’en a pas écrit. A1111 a un réglage pour couper son infotext, ComfyUI a une option de serveur
+        qui l’empêche d’enregistrer le workflow, et Fooocus n’enregistre de métadonnées que si vous l’activez.
+      </li>
+    </ul>
+    <p>
+      Un rapport vide ne prouve pas que l’image n’a pas été faite par IA. Les filigranes invisibles comme SynthID font
+      partie des pixels, pas des métadonnées, et PromptWipe ne les détecte ni ne les retire.
+    </p>
+
+    <h2>Est-ce la même chose que l’onglet PNG Info&nbsp;?</h2>
+    <p>
+      Même idée, autre endroit. L’onglet PNG Info d’AUTOMATIC1111 lit l’infotext dans l’interface et peut renvoyer les
+      réglages vers txt2img. PromptWipe ne demande aucune installation, reconnaît aussi les clés de ComfyUI, d’InvokeAI
+      et de Fooocus, liste les champs EXIF, le XMP et les Content Credentials, et montre chaque bloc du fichier. Le jour
+      où vous partagez l’image, la même page retire le tout&nbsp;: voyez <a href="/fr/">supprimer les métadonnées
+      d’une image IA</a> et la page sur les <a href="/fr/supprimer-metadonnees-stable-diffusion/">métadonnées Stable
+      Diffusion</a>.
+    </p>
+
+    <h2>Mon image est-elle envoyée pour être lue&nbsp;?</h2>
+    <p>
+      Non. La lecture se fait dans la page elle-même. La politique de sécurité du site interdit à la page d’envoyer des
+      données où que ce soit, si bien que l’outil continue de marcher une fois la page chargée, même hors ligne. Vous
+      pouvez le vérifier dans les outils de développement de votre navigateur&nbsp;: l’onglet Réseau reste vide pendant
+      la lecture. Les pages <a href="/fr/comment-ca-marche/">Comment ça marche</a> et
+      <a href="/fr/confidentialite/">Confidentialité</a> en disent plus.
+    </p>
+    <p>
+      Pour savoir quel outil écrit quels champs, lisez le <a href="/fr/guides/metadonnees-images-ia/">guide des
+      métadonnées des images IA</a>. Pour les photos de téléphone, voyez <a href="/fr/supprimer-metadonnees-photo/">les
+      métadonnées et le GPS d’une photo</a>&nbsp;; pour les données de provenance, les
+      <a href="/fr/supprimer-c2pa-content-credentials/">Content Credentials (C2PA)</a>.
+    </p>
+
+    <p class="sources">
+      Sources&nbsp;: IPTC, <a href="https://cv.iptc.org/newscodes/digitalsourcetype/">vocabulaire Digital Source
+      Type</a>&nbsp;; <a href="https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html">spécification
+      C2PA 2.2</a>&nbsp;; AUTOMATIC1111
+      <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/images.py">modules/images.py</a>&nbsp;;
+      ComfyUI <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/nodes.py">nodes.py</a> et
+      <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy/cli_args.py">comfy/cli_args.py</a>.
+    </p>
+  </div>
+</Base>

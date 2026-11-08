@@ -1,0 +1,213 @@
+---
+import Tool from '../../../components/Tool.astro';
+import Base from '../../../layouts/Base.astro';
+
+const SPEC = 'https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html';
+---
+<Base
+  lang="fr"
+  heading="Voir et supprimer les Content Credentials (C2PA)"
+  title="Supprimer le C2PA d’une image (Content Credentials)"
+  description={'Voyez ce que disent les Content Credentials (C2PA) de votre image — outil, signataire, mention IA — puis retirez-les dans votre navigateur : rien n’est envoyé.'}
+>
+  <p class="lead">
+    PromptWipe ouvre les Content Credentials (C2PA) d’une image PNG, JPEG ou WebP, montre qui le fichier dit l’avoir
+    créée et signée, puis retire le manifeste sans toucher aux pixels, dans votre navigateur. Il ne vérifie pas les
+    signatures et ne retire pas les filigranes invisibles comme SynthID. Gardez ces informations quand une règle les
+    impose.
+  </p>
+  <Tool lang="fr" />
+  <div class="prose">
+    <h2>Que sont les Content Credentials C2PA&nbsp;?</h2>
+    <p>
+      «&nbsp;Content Credentials&nbsp;» (identifiants de contenu) est le nom grand public d’un manifeste C2PA&nbsp;:
+      un enregistrement signé, rangé dans le fichier, qui dit avec quel outil l’image a été faite et ce qu’on lui a
+      fait. Pour une image IA, il indique en général qu’une IA générative a servi.
+    </p>
+    <p>
+      La norme est publiée par la C2PA (Coalition for Content Provenance and Authenticity). Le fichier contient un
+      <em>magasin de manifestes</em>, avec un ou plusieurs manifestes. Chacun porte une déclaration&nbsp;: le logiciel
+      qui l’a écrite (le <em>claim generator</em>), une liste d’assertions comme les actions effectuées (création,
+      retouche, génération par IA) et les images d’origine, et une signature cryptographique liée au certificat du
+      signataire. Une empreinte relie le manifeste aux octets exacts du fichier&nbsp;: toute retouche ultérieure se
+      voit.
+    </p>
+    <p>L’emplacement du manifeste dépend du format (C2PA 2.2, annexe A)&nbsp;:</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Format</th><th>Conteneur</th><th>PromptWipe</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>JPEG</td>
+            <td>Des segments <code>APP11</code> qui portent du JUMBF&nbsp;; un gros manifeste s’étale sur plusieurs segments contigus de 64&nbsp;Ko au plus</td>
+            <td>Tous les segments <code>APP11</code> sont retirés, pas seulement le premier</td>
+          </tr>
+          <tr>
+            <td>PNG</td>
+            <td>Un bloc <code>caBX</code>, en général avant les données d’image</td>
+            <td>Retiré</td>
+          </tr>
+          <tr>
+            <td>WebP</td>
+            <td>Un bloc <code>C2PA</code> à la fin du conteneur RIFF</td>
+            <td>Retiré, taille du fichier et indicateurs d’en-tête recalculés</td>
+          </tr>
+          <tr>
+            <td>AVIF, HEIF</td>
+            <td>Une boîte <code>uuid</code></td>
+            <td>Pas encore pris en charge</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Que montre PromptWipe de ces informations&nbsp;?</h2>
+    <p>
+      Le rapport indique le nombre de manifestes et leur taille, le logiciel que le fichier déclare
+      («&nbsp;Créé avec&nbsp;»), le nom du signataire tel qu’il figure dans son certificat, et le titre s’il y en a un.
+      Ce sont des valeurs déclarées&nbsp;: PromptWipe les lit mais ne vérifie pas la signature.
+    </p>
+    <p>
+      Pour vérifier une signature, passez par un outil de vérification comme
+      <a href="https://verify.contentauthenticity.org">Verify</a>, de la Content Authenticity Initiative. C’est un
+      autre site&nbsp;: regardez comment il traite votre fichier avant de lui confier une image privée.
+    </p>
+    <p>
+      Deux autres cas figurent dans le rapport. Certains fichiers ne portent qu’un lien, dans leurs métadonnées XMP,
+      vers des Content Credentials stockés ailleurs&nbsp;: PromptWipe l’affiche («&nbsp;Lien vers des Content
+      Credentials&nbsp;») et le retire avec le reste du XMP. Et quand un manifeste est illisible, le rapport le dit et
+      le bloc est retiré quand même.
+    </p>
+
+    <h2>Quand faut-il garder les Content Credentials&nbsp;?</h2>
+    <p>
+      Dès qu’une règle ou un engagement en dépend&nbsp;: images faites avec l’IA générative d’Adobe, plateformes ou
+      clients qui exigent d’indiquer les contenus IA, travaux dont la provenance est justement l’enjeu. Dans ces cas,
+      servez-vous de PromptWipe pour les lire, pas pour les retirer.
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>IA générative d’Adobe.</strong> Les
+          <a href="https://www.adobe.com/legal/licenses-terms/adobe-gen-ai-user-guidelines.html">règles d’utilisation
+          de l’IA générative d’Adobe</a> (mises à jour le 15&nbsp;mai 2026, section&nbsp;6) disent&nbsp;: «&nbsp;You
+          must not remove, alter, or disable any Content Credentials&nbsp;» (vous ne devez ni retirer, ni modifier, ni
+          désactiver des Content Credentials). Si votre image vient de Firefly ou d’une autre fonction d’IA générative
+          d’Adobe, gardez-les.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>Obligations d’indication.</strong> Si une plateforme, une banque d’images, un éditeur ou un client
+          vous demande de signaler les contenus générés par IA, retirer ces informations ne change rien à cette
+          obligation. Indiquez-le vous-même.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>Hypertrucages.</strong>
+          <a href="https://artificialintelligenceact.eu/article/50/">L’article&nbsp;50, paragraphe&nbsp;4, du règlement
+          européen sur l’IA</a> impose aux déployeurs d’un système d’IA qui génère des hypertrucages (deepfakes)
+          d’indiquer que le contenu a été généré ou manipulé artificiellement, avec une obligation allégée pour les
+          œuvres manifestement artistiques, créatives, satiriques ou fictives. Si cette obligation vous concerne, elle
+          demeure, quel que soit le contenu du fichier.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>Votre propre provenance.</strong> Un photographe ou un illustrateur qui signe son travail peut s’en
+          servir pour en prouver l’origine. Les retirer, c’est jeter cette preuve.
+        </p>
+      </li>
+    </ul>
+
+    <h2>Pourquoi les retirer, alors&nbsp;?</h2>
+    <p>
+      Pour la vie privée, et pour choisir ce que l’on partage. Selon l’outil qui l’a écrit, un manifeste peut nommer
+      l’organisation qui l’a signé, le logiciel et sa version, la liste des retouches et les images d’origine, parfois
+      avec leurs vignettes.
+    </p>
+    <p>
+      C’est plus que ce que beaucoup imaginent en envoyant une maquette à un client ou en publiant une image. Un
+      manifeste prend aussi de la place&nbsp;: dans un JPEG, il peut remplir plusieurs segments de 64&nbsp;Ko. Si aucun
+      des cas ci-dessus ne concerne votre image, vous pouvez préférer la partager sans cet historique.
+    </p>
+    <p>
+      Attention&nbsp;: PromptWipe retire <em>toutes</em> les métadonnées, pas seulement le C2PA. L’EXIF, le XMP, les
+      prompts et les autres blocs de texte partent aussi. Il ne garde que ce qu’il faut pour que l’image s’affiche à
+      l’identique&nbsp;: le profil de couleur et la rotation. Il ne sait pas retirer le C2PA seul&nbsp;: si vous devez
+      garder ces informations, gardez le fichier d’origine.
+    </p>
+
+    <h2>Que devient l’image une fois ces informations retirées&nbsp;?</h2>
+    <p>
+      Le fichier n’a plus de Content Credentials&nbsp;: un outil de vérification n’en trouve pas. Qui a besoin de la
+      trace de provenance ne la retrouvera plus dans cette copie&nbsp;; gardez donc l’original si vous risquez d’en
+      avoir besoin. Les pixels sont recopiés octet pour octet&nbsp;: l’image ne change pas.
+    </p>
+    <p>Trois choses restent&nbsp;:</p>
+    <ul>
+      <li>
+        Les filigranes invisibles inscrits dans les pixels, comme SynthID. Ce ne sont pas des métadonnées, et aucun
+        outil de métadonnées ne les retire.
+      </li>
+      <li>
+        Un lien par filigrane. La norme C2PA définit une <a href={`${SPEC}#_soft_binding`}>liaison souple</a>
+        (<em>soft binding</em>)&nbsp;: une empreinte ou un filigrane invisible qui permet à un vérificateur de retrouver
+        un manifeste stocké ailleurs, par exemple dans un dépôt en ligne. Si l’image en porte un, elle peut encore être
+        rattachée à ses informations.
+      </li>
+      <li>
+        Les étiquettes que les plateformes posent à partir d’autres signaux&nbsp;: filigranes, modèles de détection ou
+        déclaration de la personne qui publie.
+      </li>
+    </ul>
+
+    <h2>Que mettent les services d’IA dans leurs Content Credentials&nbsp;?</h2>
+    <p>
+      Surtout le fait que l’image est générée par IA, par quel service et à quel moment, plutôt que votre prompt. Deux
+      éditeurs décrivent leurs champs&nbsp;:
+    </p>
+    <ul>
+      <li>
+        Microsoft indique que les images
+        <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/openai/concepts/content-credentials">d’Azure
+        OpenAI</a> portent un manifeste signé par Microsoft, avec la description «&nbsp;AI Generated Image&nbsp;», un
+        agent logiciel comme «&nbsp;Azure OpenAI DALL-E&nbsp;» ou «&nbsp;Azure OpenAI ImageGen&nbsp;», et la date de
+        création.
+      </li>
+      <li>
+        Black Forest Labs indique que les images de son
+        <a href="https://help.bfl.ai/articles/3705384267-c2pa-in-flux-generated-images">API FLUX</a> portent une
+        mention «&nbsp;générée par IA&nbsp;», le claim generator, l’heure UTC, le nom et la version du modèle FLUX, et
+        aucun prompt, prompt négatif, clé d’API, identifiant de compte ni adresse IP.
+      </li>
+    </ul>
+    <p>
+      Nous n’avons pas encore analysé de fichier venant de ChatGPT, Gemini, Midjourney ou Firefly&nbsp;: cette page
+      n’affirme donc rien à leur sujet. Une page consacrée à un générateur n’est publiée qu’après l’examen d’un vrai
+      fichier. Le <a href="/fr/guides/metadonnees-images-ia/">guide des métadonnées des images IA</a> détaille ce
+      qu’écrivent les outils libres.
+    </p>
+
+    <h2>Sur quels fichiers l’outil fonctionne-t-il&nbsp;?</h2>
+    <p>
+      PNG, JPEG et WebP, jusqu’à 50&nbsp;Mo, une image à la fois. Les fichiers AVIF, HEIF et GIF sont refusés pour
+      l’instant, avec un lien pour demander le format. Tout se passe dans votre navigateur&nbsp;; la page
+      <a href="/fr/comment-ca-marche/">Comment ça marche</a> explique comment vérifier que rien n’est envoyé.
+    </p>
+
+    <p class="sources">
+      Sources&nbsp;:
+      <a href={SPEC}>spécification C2PA 2.2</a> (<a href={`${SPEC}#_embedding_manifests_into_non_bmff_based_assets`}>annexe A.3</a>,
+      <a href={`${SPEC}#_embedding_manifests_into_bmff_based_assets`}>A.5</a>,
+      <a href={`${SPEC}#_soft_binding`}>liaison souple</a>)&nbsp;;
+      <a href="https://www.adobe.com/legal/licenses-terms/adobe-gen-ai-user-guidelines.html">règles d’utilisation de l’IA générative d’Adobe</a>&nbsp;;
+      <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/openai/concepts/content-credentials">Microsoft Learn, Content Credentials</a>&nbsp;;
+      <a href="https://help.bfl.ai/articles/3705384267-c2pa-in-flux-generated-images">Black Forest Labs, C2PA dans les images FLUX</a>&nbsp;;
+      <a href="https://artificialintelligenceact.eu/article/50/">règlement européen sur l’IA, article&nbsp;50</a>.
+    </p>
+  </div>
+</Base>

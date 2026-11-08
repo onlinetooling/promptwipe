@@ -345,6 +345,123 @@ button.copy {
   padding-left: 1.2rem;
 }
 
+/* Skip link: hidden until it gets keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.skip-link:focus {
+  left: 0.5rem;
+}
+
+.footer-nav a[aria-current='page'] {
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Breadcrumb: PromptWipe › page. */
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.breadcrumb li + li::before {
+  content: '›';
+  margin-right: 0.25rem;
+}
+
+/* Article text of the content pages and guides. */
+.prose {
+  margin-top: 2.5rem;
+}
+
+.prose h2 {
+  margin: 2.25rem 0 0.6rem;
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.prose h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.prose li {
+  margin: 0.3rem 0;
+}
+
+.prose li > p {
+  margin: 0.3rem 0;
+}
+
+code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--note-bg);
+  font: 0.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  font-weight: 600;
+}
+
+caption {
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+  text-align: left;
+}
+
+.sources {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.updated {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .site-footer {
   margin-top: 3rem;
   padding-top: 1.25rem;
@@ -361,4 +478,27 @@ button.copy {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.footer-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.footer-nav ul {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.footer-nav li {
+  margin: 0.2rem 0;
+}
+
+.footer-title {
+  margin: 0.5rem 0 0.25rem;
+  color: var(--fg);
+  font-weight: 600;
 }

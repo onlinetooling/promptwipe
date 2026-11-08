@@ -1,0 +1,81 @@
+---
+import Base from '../../layouts/Base.astro';
+import { LINKS } from '../../ui/links';
+---
+<Base
+  lang="en"
+  heading="Privacy"
+  title="Privacy — PromptWipe"
+  description="PromptWipe collects no personal data: your images are processed in your browser and never uploaded. No account, no cookie, no analytics script."
+>
+  <p class="lead">
+    PromptWipe collects no personal data. Your images are read and cleaned inside your browser and are never sent
+    to a server: the site has none that could receive them. There is no account, no cookie and no analytics or
+    advertising script. Only Cloudflare, which hosts the pages, sees the usual technical data of a web request.
+  </p>
+  <div class="prose">
+    <h2>Are my images sent anywhere?</h2>
+    <p>
+      No. When you drop, choose or paste an image, the page reads it in your browser’s memory, shows what it
+      contains and builds the cleaned copy there. The file never travels over the network, and the cleaned copy is
+      handed to you as a local download.
+    </p>
+    <p>
+      This is enforced, not only promised: every page is served with a Content Security Policy that sets
+      <code>connect-src 'none'</code>, which forbids the page from opening any connection after it has loaded. You
+      can check it yourself in a few seconds, as explained in <a href="/how-it-works/">How it works</a>.
+    </p>
+
+    <h2>Do you collect any personal data?</h2>
+    <p>
+      No. There is no account, no form, no newsletter, no cookie and nothing stored in your browser. The pages load
+      no third-party script, font or widget, and no audience measurement tool: we chose not to install one, even a
+      “privacy-friendly” one, because such a script reads the page you are on, and that page shows your prompt.
+    </p>
+
+    <h2>What does the host see?</h2>
+    <p>
+      The site is hosted on Cloudflare Pages by Cloudflare, Inc. Like any web host, Cloudflare’s servers receive the
+      technical data of each request for a page: your IP address, your browser’s user agent, the address requested
+      and the time. Cloudflare uses them to deliver the pages and protect the service, under its own
+      <a href="https://www.cloudflare.com/privacypolicy/">privacy policy</a>. These requests concern the pages of the
+      site only, never your images. PromptWipe does not use these data to measure its audience or to build profiles.
+    </p>
+
+    <h2>How do you know whether people find the site?</h2>
+    <p>
+      Through Google Search Console and Bing Webmaster Tools. They give aggregated figures about the searches that
+      led to the site (queries, clicks, positions). Google and Microsoft collect these figures on their own search
+      engines, under their own policies. The only thing PromptWipe adds for that is a site verification tag in the
+      page header and a key file used to tell search engines about new pages: neither runs any code nor collects anything.
+    </p>
+
+    <h2>What about the Copy buttons and pasting?</h2>
+    <p>
+      The Copy buttons write a value (a prompt, a workflow, the diagnostic) to your clipboard, locally. Pasting an
+      image works only when you paste it yourself: the page then reads the image from that paste event, and from
+      nothing else in your clipboard.
+    </p>
+
+    <h2>What happens when I follow a link to GitHub?</h2>
+    <p>
+      Feature requests, bug reports and the source code live on GitHub. When you open those links, you are on
+      GitHub, and <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub’s
+      privacy statement</a> applies. The diagnostic that PromptWipe offers to copy for a bug report holds the
+      structure of the file only (format, sizes, list of blocks), never a value read from it and never its name. Do
+      not attach a private image or your prompt to a public report.
+    </p>
+
+    <h2>Who can I contact?</h2>
+    <p>
+      Since PromptWipe holds no personal data about you, there is nothing to access, correct or delete on our side.
+      For questions about this page, open a discussion on <a href={LINKS.discussions}>GitHub</a>. For data
+      processed by the host, see Cloudflare’s privacy policy. You can also lodge a complaint with your data
+      protection authority (in France, the <a href="https://www.cnil.fr/">CNIL</a>).
+    </p>
+    <p>
+      The publisher and host are named in the <a href="/legal/">legal notice</a>. This page changes only if the way
+      the site works changes; the date below shows the last update.
+    </p>
+  </div>
+</Base>

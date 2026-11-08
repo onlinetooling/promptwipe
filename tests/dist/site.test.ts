@@ -76,6 +76,14 @@ describe('built site', () => {
     }
   });
 
+  it('follows French typography in the French part of the 404 page', () => {
+    const html = readFileSync(join(DIST, '404.html'), 'utf8');
+    const fr = /<section lang="fr"[\s\S]*?<\/section>/.exec(html)?.[0] ?? '';
+    expect(fr).toContain('Page introuvable');
+    const text = fr.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, '\u00a0');
+    expect(text.match(/[^\s] [:;?!»]|« /g)).toBeNull();
+  });
+
   it('ships the CSP headers file', () => {
     const headers = readFileSync(join(DIST, '_headers'), 'utf8');
     expect(headers).toContain("default-src 'none'");

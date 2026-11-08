@@ -1,0 +1,68 @@
+---
+// Legal notice of an anonymous non-professional publisher under French law
+// (LCEN art. 1-1 II, in force since 23 May 2024). Lawyer review before launch.
+import Base from '../../layouts/Base.astro';
+import { LINKS } from '../../ui/links';
+---
+<Base
+  lang="en"
+  heading="Legal notice"
+  title="Legal Notice — PromptWipe"
+  description="Legal notice of PromptWipe: non-professional publisher under French law (LCEN, article 1-1 II), hosted by Cloudflare, MIT licence, contact."
+>
+  <p class="lead">
+    PromptWipe is a free tool published on a non-professional basis. It sells nothing, shows no ads and receives no
+    image: all processing happens in your browser. This page says who publishes the site, who hosts it, under which
+    licence, and how to report a problem. The site is published under French law.
+  </p>
+  <div class="prose">
+    <h2>Publisher</h2>
+    <p>
+      This site is published on a non-professional basis by a private individual who has chosen to remain
+      anonymous, as allowed by <a href="https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000801164">article 1-1 II
+      of French law no. 2004-575 of 21 June 2004 on confidence in the digital economy</a> (LCEN). The publisher’s
+      identification details have been given to the host named below.
+    </p>
+    <p>To contact the publisher, open a discussion on the <a href={LINKS.discussions}>project’s GitHub page</a>.</p>
+
+    <h2>Host</h2>
+    <p>
+      Cloudflare, Inc.<br />
+      101 Townsend St, San Francisco, CA 94107, United States<br />
+      Phone: +1 650 319 8930<br />
+      <a href="https://www.cloudflare.com/">www.cloudflare.com</a>
+    </p>
+    <p>The site is served by Cloudflare Pages, at promptwipe.pages.dev.</p>
+
+    <h2>Licence and intellectual property</h2>
+    <p>
+      The source code of the site, page texts included, is published under the
+      <a href={`${LINKS.repo}/blob/main/LICENSE`}>MIT licence</a> on <a href={LINKS.repo}>GitHub</a>. You may read,
+      reuse and modify it under the terms of that licence.
+    </p>
+    <p>
+      The images you process remain yours: PromptWipe never receives them and keeps no trace of them. The names
+      mentioned on the site (Stable Diffusion, AUTOMATIC1111, ComfyUI, Fooocus, InvokeAI, C2PA, Content Credentials,
+      Adobe Firefly and others) belong to their owners; PromptWipe is not affiliated with any of them.
+    </p>
+
+    <h2>Liability</h2>
+    <p>
+      The tool is provided as is, without warranty, as the MIT licence states. Before it offers a copy, it reads the
+      copy again and, except for very large pictures, checks that it decodes to the same dimensions as the original;
+      still, keep your original file. You are responsible for how you use the tool and for the images you publish:
+      the box below recalls what PromptWipe does not do and the uses to avoid.
+    </p>
+
+    <h2>Reporting content or a problem</h2>
+    <p>
+      For a fault in the tool, use the <a href={LINKS.bugReport}>bug report form</a> on GitHub. To report content you
+      believe to be unlawful, write to the publisher through the <a href={LINKS.discussions}>project’s GitHub
+      page</a>, or contact the host through its <a href="https://abuse.cloudflare.com/">abuse reporting form</a>.
+    </p>
+    <p>
+      How the site handles (or rather does not handle) your data is described on the <a href="/privacy/">Privacy</a>
+      page.
+    </p>
+  </div>
+</Base>

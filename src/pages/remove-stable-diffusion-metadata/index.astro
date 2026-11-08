@@ -1,0 +1,159 @@
+---
+import Tool from '../../components/Tool.astro';
+import Base from '../../layouts/Base.astro';
+
+const example = `a lighthouse on a cliff at dusk, oil painting, <lora:my-style-v2:0.8>
+Negative prompt: blurry, low quality, watermark
+Steps: 30, Sampler: DPM++ 2M, Schedule type: Karras, CFG scale: 6.5, Seed: 1234567890, Size: 832x1216, Model hash: 0a1b2c3d4e, Model: myPrivateMix_v3, Lora hashes: "my-style-v2: 5f6e7d8c9b0a", Version: v1.10.1`;
+---
+<Base
+  lang="en"
+  heading="Remove Stable Diffusion metadata from your images"
+  title="Remove Stable Diffusion Metadata (PNG Info) — PromptWipe"
+  description="Remove the prompt, seed, model and LoRA names that AUTOMATIC1111, Forge, Fooocus and InvokeAI save in PNG, JPEG and WebP. In your browser: nothing is uploaded."
+>
+  <p class="lead">
+    AUTOMATIC1111, Forge, Fooocus and InvokeAI can write your prompt, negative prompt, seed, sampler, model and LoRA
+    names into the images they save. Drop a PNG, JPEG or WebP below: PromptWipe shows that text, then removes it
+    without re-encoding the picture. Nothing is uploaded, and invisible watermarks in the pixels stay.
+  </p>
+  <Tool lang="en" />
+  <div class="prose">
+    <h2>Does Stable Diffusion save the prompt in the image?</h2>
+    <p>
+      Yes, by default. AUTOMATIC1111 (A1111) writes a block of text, which it calls the infotext, into every image it
+      saves: the prompt, the negative prompt and every setting needed to make the same picture again. Forge, which is
+      built on the A1111 code, uses the same format.
+    </p>
+    <p>Where the text goes depends on the file format:</p>
+    <ul>
+      <li>
+        <strong>PNG</strong>, the default: a text chunk named <code>parameters</code>. Text that extensions attach to
+        the image is saved alongside it, under its own key.
+      </li>
+      <li>
+        <strong>JPEG and WebP</strong>: the EXIF <code>UserComment</code> tag, stored as UTF-16 text (the “unicode”
+        encoding of the piexif library).
+      </li>
+      <li>
+        <strong>AVIF</strong> gets the same EXIF tag and <strong>GIF</strong> a GIF comment. PromptWipe does not open
+        AVIF or GIF files yet: it says so and gives you a link to request the format.
+      </li>
+    </ul>
+    <p>
+      Anyone who gets the file can read this text. A1111’s own PNG Info tab shows it and can send the settings back to
+      txt2img, and the <a href="/view-ai-image-prompt/">PromptWipe viewer</a> shows it in your browser.
+    </p>
+
+    <h2>What does the <code>parameters</code> text contain?</h2>
+    <p>
+      Three parts: the prompt, a line that starts with “Negative prompt:”, and one long line of settings. Here is an
+      invented example in the A1111 format:
+    </p>
+    <pre><code>{example}</code></pre>
+    <ul>
+      <li>The prompt, including any <code>&lt;lora:…&gt;</code> tags you typed.</li>
+      <li>The negative prompt.</li>
+      <li>The steps, sampler, CFG scale, seed and size: enough to make the same image again with the same model.</li>
+      <li>The hash and file name of the checkpoint, and a hash for each LoRA or embedding used.</li>
+      <li>The web UI version, and the values of extensions, which can add their own entries to this line.</li>
+    </ul>
+
+    <h2>Why remove it before sharing?</h2>
+    <p>
+      Because the file says more than the picture. A prompt can be hours of trial and error that you would rather keep
+      for yourself. The seed and settings let anyone copy your image exactly. Model and LoRA names, with their hashes,
+      can point to a private or unreleased model, or to a style you trained for a client.
+    </p>
+    <p>
+      The file name can give things away as well. With A1111’s default settings, an image is saved as a number followed
+      by its seed, such as <code>00012-1234567890.png</code>, and with some settings the start of the prompt is added.
+      PromptWipe keeps your file name and adds <code>-clean</code>, so rename the copy if the name says too much.
+    </p>
+
+    <h2>What do Fooocus and InvokeAI write?</h2>
+    <h3>Fooocus</h3>
+    <p>
+      Fooocus writes metadata only when “Save Metadata to Images” is ticked (Advanced › Developer Debug Mode › Debug
+      Tools; off by default). A PNG then gets two text chunks, <code>parameters</code> and <code>fooocus_scheme</code>.
+      A JPEG or WebP gets three EXIF tags: <code>UserComment</code> with the parameters, <code>Software</code> with
+      “Fooocus v” and the version, and <code>MakerNote</code> with the scheme. With the “a1111” scheme the text uses
+      the A1111 format above; with the “fooocus” scheme it is JSON.
+    </p>
+    <p>
+      Whatever that option says, Fooocus also keeps a <code>log.html</code> page in its outputs folder that lists each
+      image with its prompt and settings. It stays on your computer, but do not share that folder as it is.
+    </p>
+    <h3>InvokeAI</h3>
+    <p>
+      InvokeAI saves PNG files with up to three text chunks: <code>invokeai_metadata</code>, the generation record
+      (prompts, model, seed and settings); <code>invokeai_graph</code>, the graph that ran; and
+      <code>invokeai_workflow</code>, when you used a workflow. Older versions used other keys, such as
+      <code>sd-metadata</code>. PromptWipe names all of them in its report.
+    </p>
+
+    <h2>How does PromptWipe remove it?</h2>
+    <p>
+      It rebuilds the file from its own blocks and leaves the metadata blocks out. The image data is copied byte for
+      byte: nothing is re-encoded, so the quality does not change.
+    </p>
+    <ul>
+      <li>
+        <strong>PNG</strong>: every text chunk goes, whatever its type: plain <code>tEXt</code>, compressed
+        <code>zTXt</code> or international <code>iTXt</code>. Some tools that re-save an image store the same parameters
+        in one of the last two, which is why all three are removed. <code>eXIf</code>, <code>tIME</code> and Content
+        Credentials (<code>caBX</code>) go too.
+      </li>
+      <li>
+        <strong>JPEG and WebP</strong>: the whole EXIF block goes, with XMP and Content Credentials. If the image had a
+        rotation, only that rotation is written back.
+      </li>
+      <li><strong>Kept</strong>: the colour profile, so colours do not shift, and transparency or animation.</li>
+    </ul>
+    <p>
+      Before offering the download, PromptWipe reads the new file again to check that no metadata is left, then decodes
+      it in your browser and checks that its dimensions match the original’s. The report lists what was found, what was removed
+      and what was kept. <a href="/how-it-works/">How it works</a> gives the details.
+    </p>
+
+    <h2>Can I stop the metadata from being written in the first place?</h2>
+    <p>
+      Yes, but you then lose that record for yourself. In A1111, open Settings, section Infotext, and untick “Write
+      infotext to metadata of the generated image”. Leave “Create a text file with infotext next to every generated
+      image” unticked too, or the same text lands in a <code>.txt</code> file next to each image. In Forge, look for the
+      same options; in Fooocus, leave “Save Metadata to Images” off.
+    </p>
+    <p>
+      A simpler habit: keep your originals with their metadata, so you can reuse a seed later, and share only cleaned
+      copies. For ComfyUI files, see <a href="/remove-comfyui-workflow-from-image/">how to remove the ComfyUI
+      workflow</a>. The <a href="/guides/what-metadata-do-ai-images-contain/">guide to AI image metadata</a> compares what
+      each tool writes.
+    </p>
+
+    <h2>Does this hide that the image was made with AI?</h2>
+    <p>
+      No. It removes the text about how you made the image, not what the image is. Some Stable Diffusion code adds an
+      invisible watermark to the pixels: Stability AI’s SDXL reference scripts do, and so does the diffusers SDXL
+      pipeline when the invisible-watermark package is installed. PromptWipe never changes pixels, so such a watermark
+      stays. If a platform or the law asks you to label AI images, label them.
+    </p>
+
+    <p class="sources">
+      Sources (read in the code, November 2026): AUTOMATIC1111
+      <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/images.py">modules/images.py</a>
+      (saving and file names),
+      <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared_options.py">modules/shared_options.py</a>
+      (settings),
+      <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/infotext_utils.py">modules/infotext_utils.py</a>
+      (format); Fooocus
+      <a href="https://github.com/lllyasviel/Fooocus/blob/main/modules/private_logger.py">modules/private_logger.py</a> and
+      <a href="https://github.com/lllyasviel/Fooocus/blob/main/modules/meta_parser.py">modules/meta_parser.py</a>; InvokeAI
+      <a href="https://invoke-ai.github.io/InvokeAI-7/development/architecture/media-metadata/">media metadata</a>;
+      Stability AI
+      <a href="https://github.com/Stability-AI/generative-models/blob/main/scripts/demo/streamlit_helpers.py">streamlit_helpers.py</a>;
+      diffusers
+      <a href="https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py">SDXL pipeline</a>;
+      W3C <a href="https://www.w3.org/TR/png-3/">PNG specification</a> (text chunks).
+    </p>
+  </div>
+</Base>

@@ -7,7 +7,7 @@ import type { Outcome } from './process';
 // the file name (it can be revealing too).
 
 /** Bump with user-visible changes to the engine or the tool. */
-export const TOOL_VERSION = '0.2.0';
+export const TOOL_VERSION = '0.3.0';
 
 /** Lines of the block list; a file can hold up to 100 000 blocks. */
 export const DIAGNOSTIC_BLOCKS = 300;

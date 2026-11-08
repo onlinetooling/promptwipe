@@ -1,0 +1,219 @@
+---
+import Base from '../../../layouts/Base.astro';
+
+const A1111 = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/images.py';
+const COMFY = 'https://github.com/comfyanonymous/ComfyUI/blob/master/nodes.py';
+const COMFY_IMAGES = 'https://github.com/comfyanonymous/ComfyUI/blob/master/comfy_extras/nodes_images.py';
+const INVOKE = 'https://invoke-ai.github.io/InvokeAI-7/development/architecture/media-metadata/';
+const FOOOCUS = 'https://github.com/lllyasviel/Fooocus/blob/main/modules/private_logger.py';
+const FLUX = 'https://github.com/black-forest-labs/flux/blob/main/src/flux/util.py';
+const IPTC = 'https://cv.iptc.org/newscodes/digitalsourcetype/';
+const SPEC = 'https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html';
+const MS = 'https://learn.microsoft.com/en-us/azure/ai-foundry/openai/concepts/content-credentials';
+const BFL = 'https://help.bfl.ai/articles/3705384267-c2pa-in-flux-generated-images';
+const SDXL = 'https://github.com/Stability-AI/generative-models/blob/main/scripts/demo/streamlit_helpers.py';
+const GOOGLE = 'https://blog.google/technology/ai/ai-image-verification-gemini-app/';
+const DIFFUSERS = 'https://github.com/huggingface/diffusers/blob/main/src/diffusers/pipelines/stable_diffusion_xl/pipeline_stable_diffusion_xl.py';
+---
+<Base
+  lang="en"
+  heading="What metadata do AI images contain?"
+  title="What Metadata Do AI Images Contain? — PromptWipe"
+  description="Prompt, seed, model, ComfyUI workflow, C2PA: what AUTOMATIC1111, Forge, ComfyUI, InvokeAI, Fooocus and Flux write into image files, from their source code."
+>
+  <p class="lead">
+    Local AI tools often write the full prompt, the seed, the model and every setting into the image file, and ComfyUI
+    stores the whole workflow. Some hosted services document C2PA Content Credentials instead. This guide shows, from each
+    tool’s source code, what goes where. Removing metadata does not remove invisible watermarks in the pixels.
+  </p>
+  <div class="prose">
+    <h2>Which AI tools write the prompt into the image?</h2>
+    <p>
+      AUTOMATIC1111, Forge, ComfyUI and InvokeAI do it by default, Fooocus does it when its metadata option is on, and
+      so does the reference Flux code from Black Forest Labs. Anyone who gets the original file can read the prompt and
+      the settings.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <caption>What each tool writes, read in its source code or documentation</caption>
+        <thead>
+          <tr><th>Tool</th><th>Format</th><th>Where</th><th>What</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href={A1111}>AUTOMATIC1111</a>, Forge</td>
+            <td>PNG</td>
+            <td>Text chunk <code>parameters</code></td>
+            <td>Prompt, negative prompt, steps, sampler, CFG scale, seed, size, model hash and name, LoRA and extension settings</td>
+          </tr>
+          <tr>
+            <td>AUTOMATIC1111, Forge</td>
+            <td>JPEG, WebP, AVIF</td>
+            <td>EXIF <code>UserComment</code></td>
+            <td>The same text</td>
+          </tr>
+          <tr>
+            <td><a href={COMFY}>ComfyUI</a></td>
+            <td>PNG</td>
+            <td>Text chunks <code>prompt</code> and <code>workflow</code>, plus any extra key added by nodes</td>
+            <td>The whole graph as JSON: prompts, seeds, model and LoRA file names, node settings, sometimes local file paths</td>
+          </tr>
+          <tr>
+            <td><a href={COMFY_IMAGES}>ComfyUI</a></td>
+            <td>AVIF, animated WebP</td>
+            <td>EXIF tags holding <code>prompt:</code> and <code>workflow:</code> text</td>
+            <td>The same JSON</td>
+          </tr>
+          <tr>
+            <td><a href={INVOKE}>InvokeAI</a></td>
+            <td>PNG</td>
+            <td>Text chunks <code>invokeai_metadata</code>, <code>invokeai_graph</code>, <code>invokeai_workflow</code> (older versions: <code>sd-metadata</code>)</td>
+            <td>Generation settings, graph and workflow</td>
+          </tr>
+          <tr>
+            <td><a href={FOOOCUS}>Fooocus</a></td>
+            <td>PNG</td>
+            <td>Text chunks <code>parameters</code> and <code>fooocus_scheme</code></td>
+            <td>Prompt, seed, models, styles</td>
+          </tr>
+          <tr>
+            <td>Fooocus</td>
+            <td>JPEG, WebP</td>
+            <td>EXIF <code>UserComment</code> (parameters), <code>Software</code> (“Fooocus v…”), <code>MakerNote</code> (scheme)</td>
+            <td>The same data</td>
+          </tr>
+          <tr>
+            <td><a href={FLUX}>Flux reference code</a></td>
+            <td>JPEG</td>
+            <td>EXIF <code>ImageDescription</code>, <code>Software</code>, <code>Make</code>, <code>Model</code></td>
+            <td>The prompt in ImageDescription; “AI generated;txt2img;flux”, “Black Forest Labs” and the model name in the others</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Two details matter for privacy. A ComfyUI workflow is a complete recipe: dropping the PNG back into ComfyUI loads
+      it, with your custom nodes and file names. And Fooocus also writes a <code>log.html</code> file next to the
+      images, with the prompts, which stays on your disk.
+    </p>
+    <p>
+      The pages on <a href="/remove-stable-diffusion-metadata/">Stable Diffusion metadata</a> and on the
+      <a href="/remove-comfyui-workflow-from-image/">ComfyUI workflow</a> explain how to read, remove or stop writing
+      these fields.
+    </p>
+
+    <h2>Where is metadata stored in an image file?</h2>
+    <p>
+      In blocks set aside from the pixels, which every image format allows. Four kinds carry what AI tools write: PNG
+      text chunks, EXIF, XMP and C2PA manifests.
+    </p>
+    <ul>
+      <li>
+        <p>
+          <strong>PNG text chunks</strong> (<code>tEXt</code>, <code>zTXt</code>, <code>iTXt</code>) are pairs of a key
+          and a text, compressed or not. Any program can add one with any key, which is why each AI tool picked its own
+          names.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>EXIF</strong> comes from cameras: maker, model, date, exposure, GPS position. AI tools reuse some of
+          its fields, such as <code>UserComment</code>, <code>ImageDescription</code>, <code>Software</code> or
+          <code>MakerNote</code>, to store their settings in JPEG and WebP files.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>XMP</strong> is an XML packet used by Adobe software and many others. It can hold the creator tool
+          and the IPTC <a href={IPTC}>digital source type</a>, a standard way to say how an image was made:
+          <code>trainedAlgorithmicMedia</code> means “created using generative AI” and
+          <code>compositeWithTrainedAlgorithmicMedia</code> “edited using generative AI”.
+        </p>
+      </li>
+      <li>
+        <p>
+          <strong>C2PA</strong> manifests, also called Content Credentials, are signed records of how the image was
+          made, stored as JUMBF data (<a href={`${SPEC}#_embedding_manifests_into_non_bmff_based_assets`}>C2PA 2.2,
+          annex A</a>). The <a href="/remove-c2pa-content-credentials/">C2PA page</a> explains what they contain and
+          when to keep them.
+        </p>
+      </li>
+    </ul>
+    <p>
+      Photos add their own layer: camera, lens, date and often the GPS position. See
+      <a href="/remove-photo-metadata-gps/">photo metadata and GPS</a>.
+    </p>
+
+    <h2>What do hosted AI generators write?</h2>
+    <p>
+      The vendors that document it describe C2PA Content Credentials saying that the image was made by AI, by which
+      service and when, rather than the prompt. Two examples are published:
+    </p>
+    <ul>
+      <li>
+        <a href={MS}>Microsoft</a>: images from Azure OpenAI carry a manifest signed by Microsoft, with the description
+        “AI Generated Image”, a software agent such as “Azure OpenAI DALL-E” or “Azure OpenAI ImageGen”, and the time
+        of creation.
+      </li>
+      <li>
+        <a href={BFL}>Black Forest Labs</a>: JPEG and PNG images from the FLUX API carry Content Credentials with an
+        AI-generated flag, the claim generator, the UTC time, and the model name and version, and no prompt, negative
+        prompt, API key, account ID or IP address.
+      </li>
+    </ul>
+    <p>
+      For ChatGPT, Midjourney, Gemini and Firefly, we have not inspected a real file yet. Published reports differ, and
+      some come from sellers of removal tools, so this guide states nothing about them. We publish a page for a
+      generator only after inspecting a real file from it.
+    </p>
+
+    <h2>Does removing metadata remove AI watermarks?</h2>
+    <p>
+      No. An invisible watermark is written into the pixels themselves, not into a metadata block, so no metadata tool
+      removes it, PromptWipe included. Visible logos are part of the picture too.
+    </p>
+    <ul>
+      <li>
+        <strong>SynthID</strong>: <a href={GOOGLE}>Google says</a> SynthID embeds imperceptible signals in AI-generated
+        content, and that the Gemini app can check an uploaded image for it.
+      </li>
+      <li>
+        <strong>DWT-DCT</strong>, from the open-source <code>invisible-watermark</code> package: Stability AI’s
+        <a href={SDXL}>SDXL reference scripts</a> call it, the <a href={FLUX}>Flux reference code</a> calls it on every
+        image it saves, and the <a href={DIFFUSERS}>diffusers SDXL pipeline</a> adds it by default when the package is
+        installed.
+      </li>
+    </ul>
+    <p>
+      So an image can carry no metadata at all and still be recognised as AI-generated. PromptWipe is a privacy tool
+      for what the file says about you, not a way to hide how an image was made.
+    </p>
+
+    <h2>How can you check what your own image contains?</h2>
+    <p>
+      Open it in the <a href="/view-ai-image-prompt/">PromptWipe viewer</a>: it lists every block of the file and shows
+      the prompts, settings, EXIF fields and Content Credentials it finds, without sending the image anywhere.
+    </p>
+    <p>
+      Keep in mind that a copied, pasted or screenshotted image has often lost its metadata already, and that many
+      social platforms re-encode uploads, which often drops it too. To know what a file you are about to share
+      carries, check that file itself, then share the cleaned copy.
+    </p>
+
+    <p class="sources">
+      Sources:
+      <a href={A1111}>AUTOMATIC1111 images.py</a>;
+      <a href={COMFY}>ComfyUI nodes.py</a> and <a href={COMFY_IMAGES}>nodes_images.py</a>;
+      <a href={INVOKE}>InvokeAI, media metadata</a>;
+      <a href={FOOOCUS}>Fooocus private_logger.py</a>;
+      <a href={FLUX}>Flux util.py</a>;
+      <a href={IPTC}>IPTC digital source type</a>;
+      <a href={SPEC}>C2PA 2.2 specification</a>;
+      <a href={MS}>Microsoft Learn</a>;
+      <a href={BFL}>Black Forest Labs help</a>;
+      <a href={GOOGLE}>Google, image verification in Gemini</a>;
+      <a href={SDXL}>Stability AI generative-models</a>;
+      <a href={DIFFUSERS}>diffusers</a>.
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,87 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { LINKS } from '../../../ui/links';
+---
+<Base
+  lang="fr"
+  heading="Confidentialité"
+  title="Confidentialité — PromptWipe"
+  description={'PromptWipe ne collecte aucune donnée personnelle : vos images sont traitées dans votre navigateur, jamais envoyées. Ni compte, ni cookie, ni mesure d’audience.'}
+>
+  <p class="lead">
+    PromptWipe ne collecte aucune donnée personnelle. Vos images sont lues et nettoyées dans votre navigateur et ne
+    sont jamais envoyées à un serveur&nbsp;: le site n’en a aucun qui pourrait les recevoir. Pas de compte, pas de
+    cookie, aucun script de mesure d’audience ni de publicité. Seul Cloudflare, qui héberge les pages, voit les
+    données techniques habituelles d’une visite.
+  </p>
+  <div class="prose">
+    <h2>Mes images sont-elles envoyées quelque part&nbsp;?</h2>
+    <p>
+      Non. Quand vous déposez, choisissez ou collez une image, la page la lit dans la mémoire de votre navigateur,
+      affiche ce qu’elle contient et prépare la copie nettoyée sur place. Le fichier ne passe jamais par le réseau, et
+      la copie nettoyée vous est remise sous forme de téléchargement local.
+    </p>
+    <p>
+      Ce n’est pas seulement une promesse&nbsp;: chaque page est servie avec une politique de sécurité du contenu
+      (CSP) qui fixe <code>connect-src 'none'</code>, ce qui interdit à la page d’ouvrir la moindre connexion une fois
+      chargée. Vous pouvez le vérifier vous-même en quelques secondes, comme l’explique la page
+      <a href="/fr/comment-ca-marche/">Comment ça marche</a>.
+    </p>
+
+    <h2>Collectez-vous des données personnelles&nbsp;?</h2>
+    <p>
+      Non. Il n’y a ni compte, ni formulaire, ni lettre d’information, ni cookie, et rien n’est enregistré dans votre
+      navigateur. Les pages ne chargent aucun script, aucune police ni aucun module d’un autre site, et aucun outil
+      de mesure d’audience&nbsp;: nous avons choisi de n’en installer aucun, même «&nbsp;respectueux de la vie
+      privée&nbsp;», car un tel script lit la page affichée, et cette page montre votre prompt.
+    </p>
+
+    <h2>Que voit l’hébergeur&nbsp;?</h2>
+    <p>
+      Le site est hébergé sur Cloudflare Pages par Cloudflare, Inc. Comme chez tout hébergeur, ses serveurs reçoivent
+      les données techniques de chaque demande de page&nbsp;: votre adresse IP, l’identifiant de votre navigateur,
+      l’adresse demandée et l’heure. Cloudflare s’en sert pour délivrer les pages et protéger le service, selon sa
+      propre <a href="https://www.cloudflare.com/fr-fr/privacypolicy/">politique de confidentialité</a>. Ces
+      demandes ne concernent que les pages du site, jamais vos images. PromptWipe n’utilise pas ces données pour
+      mesurer son audience ni pour établir des profils.
+    </p>
+
+    <h2>Comment savez-vous si le site est trouvé&nbsp;?</h2>
+    <p>
+      Grâce à Google Search Console et Bing Webmaster Tools. Ces services donnent des chiffres globaux sur les
+      recherches qui ont mené au site (requêtes, clics, positions). Google et Microsoft les collectent sur leurs propres
+      moteurs de recherche, selon leurs propres règles. PromptWipe n’ajoute pour cela qu’une balise de vérification
+      dans l’en-tête des pages et un fichier de clé qui sert à signaler les nouvelles pages aux moteurs de
+      recherche&nbsp;: ni l’un ni l’autre n’exécute de code ou ne collecte quoi que ce soit.
+    </p>
+
+    <h2>Et les boutons «&nbsp;Copier&nbsp;» ou le collage&nbsp;?</h2>
+    <p>
+      Les boutons «&nbsp;Copier&nbsp;» placent une valeur (un prompt, un workflow, le diagnostic) dans votre
+      presse-papiers, sur votre appareil. Le collage d’une image ne fonctionne que lorsque vous collez vous-même&nbsp;:
+      la page lit alors l’image transmise par ce collage, et rien d’autre de votre presse-papiers.
+    </p>
+
+    <h2>Que se passe-t-il quand je suis un lien vers GitHub&nbsp;?</h2>
+    <p>
+      Les demandes de fonction, les signalements de problème et le code source se trouvent sur GitHub. Quand vous
+      ouvrez ces liens, vous êtes sur GitHub, et c’est la
+      <a href="https://docs.github.com/fr/site-policy/privacy-policies/github-general-privacy-statement">déclaration
+      de confidentialité de GitHub</a> qui s’applique. Le diagnostic que PromptWipe propose de copier pour un
+      signalement ne contient que la structure du fichier (format, tailles, liste des blocs), jamais une valeur lue
+      dans le fichier ni son nom. Ne joignez pas une image privée ou votre prompt à un signalement public.
+    </p>
+
+    <h2>Qui contacter&nbsp;?</h2>
+    <p>
+      PromptWipe ne détenant aucune donnée personnelle vous concernant, il n’y a rien à consulter, corriger ou effacer
+      de notre côté. Pour une question sur cette page, ouvrez une discussion sur <a href={LINKS.discussions}>GitHub</a>.
+      Pour les données traitées par l’hébergeur, reportez-vous à la politique de confidentialité de Cloudflare. Vous
+      pouvez aussi adresser une réclamation à la <a href="https://www.cnil.fr/">CNIL</a>.
+    </p>
+    <p>
+      L’éditeur et l’hébergeur sont indiqués dans les <a href="/fr/mentions-legales/">mentions légales</a>. Cette page
+      ne change que si le fonctionnement du site change&nbsp;; la date ci-dessous indique sa dernière mise à jour.
+    </p>
+  </div>
+</Base>

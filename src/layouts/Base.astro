@@ -1,37 +1,108 @@
 ---
 import '../styles/global.css';
-import { absolute, alternatesFor, type Lang } from '../i18n/routes';
+import Limits from '../components/Limits.astro';
+import { HOME, ROUTES, absolute, alternatesFor, longDate, type Lang, type RoutePair } from '../i18n/routes';
 import { LINKS } from '../ui/links';
+import { jsonLd } from './json-ld';
 
 interface Props {
   lang: Lang;
+  /** <title>: 60 characters at most, with the main query (design §6). */
   title: string;
   description: string;
+  /** The page's only <h1>. */
+  heading: string;
+  /** The 404 page: no route pair, no canonical, not indexed. */
+  notFound?: boolean;
 }
 
-const { lang, title, description } = Astro.props;
+const { lang, title, description, heading, notFound = false } = Astro.props;
 const path = Astro.url.pathname;
-const pair = alternatesFor(path);
-if (!pair) throw new Error(`Page ${path} is missing from src/i18n/routes.ts`);
+const pair: RoutePair | undefined = notFound ? undefined : alternatesFor(path);
+if (!notFound && !pair) throw new Error(`Page ${path} is missing from src/i18n/routes.ts`);
+const isHome = pair === HOME;
+const home = HOME[lang];
 
 // Language switcher: plain links, no automatic redirect (design §6).
-const other = lang === 'en' ? { href: pair.fr, lang: 'fr', label: 'Français' } : { href: pair.en, lang: 'en', label: 'English' };
+const other: Lang = lang === 'en' ? 'fr' : 'en';
+const switcher = pair && { href: pair[other], lang: other, label: other === 'fr' ? 'Français' : 'English' };
+
 const text = {
   en: {
-    home: '/',
+    skip: 'Skip to content',
+    breadcrumb: 'Breadcrumb',
+    updated: 'Last updated:',
+    allPages: 'All pages',
+    tools: 'Tools',
+    guides: 'Guides',
+    about: 'About PromptWipe',
+    otherLang: 'En français',
     privacy: 'Your images never leave your browser: PromptWipe has no server that receives them.',
     feature: 'Request a feature',
     bug: 'Report a bug',
     source: 'Source code (MIT)',
   },
   fr: {
-    home: '/fr/',
+    skip: 'Aller au contenu',
+    breadcrumb: 'Fil d’Ariane',
+    updated: 'Mis à jour le',
+    allPages: 'Toutes les pages',
+    tools: 'Outils',
+    guides: 'Guides',
+    about: 'À propos de PromptWipe',
+    otherLang: 'In English',
     privacy: 'Vos images ne quittent jamais votre navigateur : PromptWipe n’a aucun serveur qui les reçoit.',
     feature: 'Demander une fonction',
     bug: 'Signaler un problème',
     source: 'Code source (MIT)',
   },
 }[lang];
+
+const byKind = (kind: RoutePair['kind']) => ROUTES.filter((r) => r.kind === kind);
+const current = (href: string) => (href === path ? 'page' : undefined);
+
+// Structured data (design §6): WebSite + WebApplication on the home page,
+// BreadcrumbList on every other page, Article on guides. No rating, no FAQPage.
+const data: object[] = [];
+if (pair && isHome) {
+  data.push(
+    { '@type': 'WebSite', '@id': `${absolute(home)}#website`, name: 'PromptWipe', url: absolute(home), inLanguage: lang },
+    {
+      '@type': 'WebApplication',
+      name: 'PromptWipe',
+      url: absolute(path),
+      description,
+      inLanguage: lang,
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires JavaScript',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    },
+  );
+}
+if (pair && !isHome) {
+  data.push({
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'PromptWipe', item: absolute(home) },
+      { '@type': 'ListItem', position: 2, name: pair.label[lang], item: absolute(path) },
+    ],
+  });
+}
+if (pair?.kind === 'guide') {
+  data.push({
+    '@type': 'Article',
+    headline: heading,
+    description,
+    inLanguage: lang,
+    datePublished: pair.published ?? pair.updated,
+    dateModified: pair.updated,
+    mainEntityOfPage: absolute(path),
+    author: { '@type': 'Organization', name: 'PromptWipe', url: absolute(home) },
+    publisher: { '@type': 'Organization', name: 'PromptWipe', url: absolute(home) },
+  });
+}
 ---
 <!doctype html>
 <html lang={lang}>
@@ -42,20 +113,57 @@ const text = {
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="canonical" href={absolute(path)} />
-    <link rel="alternate" hreflang="en" href={absolute(pair.en)} />
-    <link rel="alternate" hreflang="fr" href={absolute(pair.fr)} />
-    <link rel="alternate" hreflang="x-default" href={absolute(pair.en)} />
+    {pair ? (
+      <>
+        <link rel="canonical" href={absolute(path)} />
+        <link rel="alternate" hreflang="en" href={absolute(pair.en)} />
+        <link rel="alternate" hreflang="fr" href={absolute(pair.fr)} />
+        <link rel="alternate" hreflang="x-default" href={absolute(pair.en)} />
+      </>
+    ) : (
+      <meta name="robots" content="noindex" />
+    )}
+    {data.length > 0 && <script type="application/ld+json" set:html={jsonLd(data)} />}
   </head>
   <body>
+    <a class="skip-link" href="#main">{text.skip}</a>
     <header class="site-header">
-      <a class="brand" href={text.home}>PromptWipe</a>
-      <a class="lang-switch" href={other.href} hreflang={other.lang} lang={other.lang}>{other.label}</a>
+      <a class="brand" href={home}>PromptWipe</a>
+      {switcher && <a class="lang-switch" href={switcher.href} hreflang={switcher.lang} lang={switcher.lang}>{switcher.label}</a>}
     </header>
-    <main>
+    <main id="main">
+      {pair && !isHome && (
+        <nav class="breadcrumb" aria-label={text.breadcrumb}>
+          <ol>
+            <li><a href={home}>PromptWipe</a></li>
+            <li aria-current="page">{pair.label[lang]}</li>
+          </ol>
+        </nav>
+      )}
+      <h1>{heading}</h1>
       <slot />
+      {!notFound && <Limits lang={lang} />}
+      {pair && (
+        <p class="updated">{text.updated} <time datetime={pair.updated}>{longDate(pair.updated, lang)}</time></p>
+      )}
     </main>
     <footer class="site-footer">
+      <nav class="footer-nav" aria-label={text.allPages}>
+        <div>
+          <p class="footer-title">{text.tools}</p>
+          <ul>{byKind('tool').map((r) => <li><a href={r[lang]} aria-current={current(r[lang])}>{r.label[lang]}</a></li>)}</ul>
+        </div>
+        <div>
+          <p class="footer-title">{text.guides}</p>
+          <ul>{byKind('guide').map((r) => <li><a href={r[lang]} aria-current={current(r[lang])}>{r.label[lang]}</a></li>)}</ul>
+          <p class="footer-title">{text.about}</p>
+          <ul>{byKind('about').map((r) => <li><a href={r[lang]} aria-current={current(r[lang])}>{r.label[lang]}</a></li>)}</ul>
+        </div>
+        <div lang={other}>
+          <p class="footer-title">{text.otherLang}</p>
+          <ul>{byKind('tool').map((r) => <li><a href={r[other]} hreflang={other}>{r.label[other]}</a></li>)}</ul>
+        </div>
+      </nav>
       <p>{text.privacy}</p>
       <ul class="footer-links">
         <li><a href={LINKS.discussions}>{text.feature}</a></li>

@@ -1,0 +1,161 @@
+---
+import Tool from '../../components/Tool.astro';
+import Base from '../../layouts/Base.astro';
+
+const example = `{
+  "3": {
+    "class_type": "KSampler",
+    "inputs": { "seed": 812345678901234, "steps": 30, "cfg": 6.5, "sampler_name": "dpmpp_2m" }
+  },
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "clients/acme/brand-style-v3.safetensors" }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "portrait of a woman in a red coat, rainy street, 35mm" }
+  }
+}`;
+---
+<Base
+  lang="en"
+  heading="Remove the ComfyUI workflow from an image"
+  title="Remove the ComfyUI Workflow from an Image — PromptWipe"
+  description="A ComfyUI PNG carries the whole workflow: prompts, seeds, models, LoRAs. See it, then remove it in your browser. Free, nothing is uploaded."
+>
+  <p class="lead">
+    By default, every image ComfyUI saves holds the full workflow that made it: nodes, prompts, seeds, model and LoRA
+    names. PromptWipe shows that data, then gives you a copy without it, pixels unchanged. Everything runs in your
+    browser. It does not remove invisible watermarks written into the pixels.
+  </p>
+  <Tool lang="en" />
+  <div class="prose">
+    <h2>Does a ComfyUI image contain the workflow?</h2>
+    <p>
+      Yes, unless metadata saving was turned off. The built-in Save Image node writes two text entries into the PNG:
+      <code>prompt</code>, the graph as ComfyUI runs it, and <code>workflow</code>, the graph as you see it on the
+      canvas, layout included. Both are plain JSON.
+    </p>
+    <p>
+      In the source code, the node adds <code>prompt</code> as a PNG text chunk, then one chunk for each key it
+      receives in <code>extra_pnginfo</code>: that is where <code>workflow</code> comes from, and where custom nodes can
+      add their own fields. ComfyUI’s documentation calls this saving “a generated image together with its recipe”. The
+      file looks the same; the recipe is simply stored next to the pixels.
+    </p>
+
+    <h2>What can someone learn from a ComfyUI image?</h2>
+    <p>
+      Everything needed to rebuild your setup. Drag the PNG onto a ComfyUI canvas, or open it with File › Open, and
+      ComfyUI rebuilds the workflow from the embedded <code>workflow</code> field. Anyone you send the file to can do
+      the same.
+    </p>
+    <p>That includes:</p>
+    <ul>
+      <li>the positive and negative prompts, word for word;</li>
+      <li>the seed, sampler, scheduler, steps, CFG and image size, enough to reproduce the image;</li>
+      <li>
+        the file names of your checkpoints, LoRAs, upscalers and input images, which can include folder names (a client
+        or project name, for example);
+      </li>
+      <li>the custom node packages you use and their settings;</li>
+      <li>your node layout: groups, notes and titles you wrote on the canvas.</li>
+    </ul>
+    <p>Here is a shortened, made-up example of what a <code>prompt</code> entry looks like:</p>
+    <pre><code>{example}</code></pre>
+    <p>
+      A real one is usually much longer, and the <code>workflow</code> entry, which also stores the layout, longer
+      still. If you share workflows on purpose, that is a feature. If you only meant to share a picture, it is a leak.
+    </p>
+
+    <h2>What does PromptWipe show and remove?</h2>
+    <p>
+      PromptWipe lists every text entry it finds with its key name. A ComfyUI workflow is labelled with its number of
+      nodes. Long JSON values start folded, with a Copy button, so you can check what you are about to share before
+      removing it.
+    </p>
+    <p>When you clean the file, PromptWipe:</p>
+    <ul>
+      <li>
+        removes every PNG text chunk (<code>prompt</code>, <code>workflow</code> and any key added by custom nodes),
+        plus EXIF, XMP, C2PA Content Credentials and timestamps if present;
+      </li>
+      <li>
+        copies the image data byte for byte: no re-encoding, so the picture is identical, and the colour profile is
+        kept;
+      </li>
+      <li>decodes the result and checks it has the same dimensions as the original before offering the download.</li>
+    </ul>
+    <p>
+      The download is named after the original with <code>-clean</code> added. Save Image names files
+      <code>ComfyUI_00042_.png</code> by default, and that name alone says which tool made the image: rename the file if
+      that matters to you.
+    </p>
+
+    <h2>What about animated WebP, animated PNG and AVIF?</h2>
+    <p>
+      ComfyUI’s other save nodes store the same data elsewhere. PromptWipe cleans animated PNG and animated WebP files;
+      AVIF is not supported yet.
+    </p>
+    <ul>
+      <li>
+        <strong>Animated PNG</strong>: the workflow sits in PNG text chunks, as in a still PNG. PromptWipe removes them
+        and keeps every frame.
+      </li>
+      <li>
+        <strong>Animated WebP</strong>: ComfyUI writes the data into EXIF tags, with <code>prompt:</code> followed by the
+        JSON in the tag normally used for the camera model, and the other keys in the tags just before it, starting with
+        the camera maker. That is why PromptWipe’s report may show your workflow under “Camera model (Model)”. The whole
+        EXIF block is removed; the animation is kept.
+      </li>
+      <li>
+        <strong>AVIF</strong>: ComfyUI also writes the workflow into AVIF files, as EXIF. PromptWipe refuses AVIF for
+        now and shows a “Request this format” link: tell us if you need it.
+      </li>
+    </ul>
+    <p>Videos (MP4, WebM) carry the workflow in their container tags; PromptWipe handles still and animated images only.</p>
+
+    <h2>How do I stop ComfyUI from saving the workflow?</h2>
+    <p>
+      ComfyUI has a server option for this. In ComfyUI Desktop, it is in Settings › Server-Config: “Disable saving
+      prompt metadata in files.” With it on, the built-in save nodes write no prompt and no workflow.
+    </p>
+    <p>Two things to know before you turn it on:</p>
+    <ul>
+      <li>
+        It applies to every file you save from then on, so you can no longer reload your own workflows by dragging
+        your images back in. Many people prefer to keep metadata on, keep the originals private and share cleaned
+        copies.
+      </li>
+      <li>
+        Custom save nodes may follow their own rules and can write extra metadata of their own. Check a file from each
+        save node you use: drop it on this page and see what comes back.
+      </li>
+    </ul>
+    <p>
+      PromptWipe never changes your original file: it gives you a new, cleaned copy and leaves the original where it
+      was, workflow included.
+    </p>
+
+    <h2>Is my image uploaded?</h2>
+    <p>
+      No. The file is read and cleaned by code running in this page, on your device. There is no server that receives
+      images, and the page keeps working with the network turned off once it has loaded.
+      <a href="/how-it-works/">How it works</a> explains how to check this yourself.
+    </p>
+    <p>
+      Related pages: <a href="/view-ai-image-prompt/">view the prompt of an AI image</a>,
+      <a href="/remove-stable-diffusion-metadata/">Stable Diffusion metadata</a> (AUTOMATIC1111, Forge, Fooocus,
+      InvokeAI) and <a href="/guides/what-metadata-do-ai-images-contain/">what metadata AI images contain</a>.
+    </p>
+
+    <p class="sources">
+      Sources: ComfyUI documentation,
+      <a href="https://docs.comfy.org/development/api-development/workflow-metadata">Workflow metadata in output files</a>;
+      ComfyUI source code: <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/nodes.py">nodes.py</a>
+      (Save Image), <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy_api/latest/_ui.py">_ui.py</a>
+      (animated PNG and WebP), <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy_extras/nodes_images.py">comfy_extras/nodes_images.py</a> (AVIF),
+      <a href="https://github.com/comfyanonymous/ComfyUI/blob/master/comfy/cli_args.py">cli_args.py</a>
+      (server option).
+    </p>
+  </div>
+</Base>

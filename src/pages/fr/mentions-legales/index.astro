@@ -1,0 +1,73 @@
+---
+// Legal notice of an anonymous non-professional publisher under French law
+// (LCEN art. 1-1 II, in force since 23 May 2024). Lawyer review before launch.
+import Base from '../../../layouts/Base.astro';
+import { LINKS } from '../../../ui/links';
+---
+<Base
+  lang="fr"
+  heading="Mentions légales"
+  title="Mentions légales — PromptWipe"
+  description={'Mentions légales de PromptWipe : éditeur non professionnel (LCEN, article 1-1 II), hébergeur Cloudflare, licence MIT et moyens de contact.'}
+>
+  <p class="lead">
+    PromptWipe est un outil gratuit, édité à titre non professionnel. Il ne vend rien, n’affiche aucune publicité et
+    ne reçoit aucune image&nbsp;: tout le traitement a lieu dans votre navigateur. Cette page indique qui publie le
+    site, qui l’héberge, sous quelle licence et comment signaler un problème. Le site relève du droit français.
+  </p>
+  <div class="prose">
+    <h2>Éditeur</h2>
+    <p>
+      Ce site est édité à titre non professionnel par une personne physique qui a choisi de préserver son anonymat,
+      comme le permet l’<a href="https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000801164">article&nbsp;1-1&nbsp;II
+      de la loi n°&nbsp;2004-575 du 21&nbsp;juin 2004 pour la confiance dans l’économie numérique</a> (LCEN). Ses
+      éléments d’identification ont été communiqués à l’hébergeur indiqué ci-dessous.
+    </p>
+    <p>
+      Pour contacter l’éditeur, ouvrez une discussion sur la <a href={LINKS.discussions}>page GitHub du projet</a>.
+    </p>
+
+    <h2>Hébergeur</h2>
+    <p>
+      Cloudflare, Inc.<br />
+      101 Townsend St, San Francisco, CA 94107, États-Unis<br />
+      Téléphone&nbsp;: +1 650 319 8930<br />
+      <a href="https://www.cloudflare.com/fr-fr/">www.cloudflare.com</a>
+    </p>
+    <p>Le site est servi par Cloudflare Pages, à l’adresse promptwipe.pages.dev.</p>
+
+    <h2>Licence et propriété intellectuelle</h2>
+    <p>
+      Le code source du site, textes des pages compris, est publié sous
+      <a href={`${LINKS.repo}/blob/main/LICENSE`}>licence MIT</a> sur <a href={LINKS.repo}>GitHub</a>. Vous pouvez le
+      lire, le réutiliser et le modifier selon les termes de cette licence.
+    </p>
+    <p>
+      Les images que vous traitez restent les vôtres&nbsp;: PromptWipe ne les reçoit jamais et n’en garde aucune
+      trace. Les noms cités sur le site (Stable Diffusion, AUTOMATIC1111, ComfyUI, Fooocus, InvokeAI, C2PA, Content
+      Credentials, Adobe Firefly et d’autres) appartiennent à leurs titulaires&nbsp;; PromptWipe n’est lié à aucun
+      d’eux.
+    </p>
+
+    <h2>Responsabilité</h2>
+    <p>
+      L’outil est fourni tel quel, sans garantie, comme le prévoit la licence MIT. Avant de proposer une copie, il la
+      relit et, sauf pour les très grandes images, vérifie qu’elle se décode avec les mêmes dimensions que
+      l’original&nbsp;; gardez tout de même votre fichier d’origine. Vous êtes responsable de l’usage que vous
+      faites de l’outil et des images que vous publiez&nbsp;: l’encadré ci-dessous rappelle ce que PromptWipe ne fait
+      pas et les usages à éviter.
+    </p>
+
+    <h2>Signaler un contenu ou un problème</h2>
+    <p>
+      Pour un défaut de l’outil, utilisez le <a href={LINKS.bugReport}>formulaire de signalement</a> sur GitHub. Pour
+      signaler un contenu que vous estimez illicite, écrivez à l’éditeur par la <a href={LINKS.discussions}>page GitHub
+      du projet</a>, ou adressez-vous à l’hébergeur par son
+      <a href="https://abuse.cloudflare.com/">formulaire de signalement d’abus</a>.
+    </p>
+    <p>
+      La façon dont le site traite (ou plutôt ne traite pas) vos données est décrite dans la page
+      <a href="/fr/confidentialite/">Confidentialité</a>.
+    </p>
+  </div>
+</Base>

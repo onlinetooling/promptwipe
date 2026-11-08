@@ -1,0 +1,188 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { LINKS } from '../../../ui/links';
+---
+<Base
+  lang="fr"
+  heading="Comment PromptWipe retire les métadonnées sans toucher aux pixels"
+  title="Comment ça marche, sans perte ni envoi — PromptWipe"
+  description="PromptWipe recopie les données d’image octet pour octet et laisse les métadonnées de côté, dans votre navigateur. Ce qui est gardé, retiré, et comment le vérifier."
+>
+  <p class="lead">
+    Un fichier image est un conteneur&nbsp;: des blocs de données d’image et des blocs de métadonnées. PromptWipe lit
+    cette structure dans votre navigateur, recopie les blocs d’image octet pour octet et laisse de côté les blocs de
+    métadonnées. Rien n’est réencodé, rien n’est envoyé. Les filigranes invisibles inscrits dans les pixels restent.
+  </p>
+
+  <div class="prose">
+    <h2>Que garde PromptWipe, et que retire-t-il&nbsp;?</h2>
+    <p>
+      Il garde ce dont votre navigateur a besoin pour afficher l’image exactement comme avant&nbsp;: les données
+      d’image, la transparence, l’animation et les informations de couleur. Il retire tout le reste. Le fichier est
+      découpé selon sa propre structure (chaque bloc annonce sa longueur), jamais en y cherchant des mots.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Format</span></th>
+            <th scope="col">Gardé</th>
+            <th scope="col">Retiré</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">PNG</th>
+            <td>
+              En-tête et données d’image (<code>IHDR</code>, <code>PLTE</code>, <code>IDAT</code>, <code>IEND</code>),
+              transparence (<code>tRNS</code>), animation (<code>acTL</code>, <code>fcTL</code>, <code>fdAT</code>),
+              informations de couleur (<code>sRGB</code>, <code>gAMA</code>, <code>cHRM</code>, <code>iCCP</code>,
+              <code>cICP</code>, blocs HDR)
+            </td>
+            <td>
+              Blocs texte (<code>tEXt</code>, <code>zTXt</code>, <code>iTXt</code>&nbsp;: paramètres de Stable
+              Diffusion, prompt et workflow de ComfyUI, InvokeAI, Fooocus, XMP), <code>eXIf</code>, <code>caBX</code>
+              (C2PA), <code>tIME</code>, <code>pHYs</code>, <code>bKGD</code> et tous les autres blocs facultatifs,
+              octets après la fin
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">JPEG</th>
+            <td>
+              Tout ce qui sert au décodage (tables de quantification et de Huffman, en-tête d’image, chaque passe d’un
+              JPEG progressif), l’en-tête JFIF sans sa vignette, le segment <code>Adobe</code> (décodage des couleurs),
+              le profil de couleur ICC
+            </td>
+            <td>
+              EXIF (appareil, logiciel, date, GPS, description, UserComment, MakerNote, vignette), XMP et XMP étendu,
+              données IPTC et Photoshop, tous les segments C2PA, commentaires, autres segments d’application, images
+              secondaires (carte de gain HDR, vidéo des Motion Photos), octets après la fin
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">WebP</th>
+            <td>
+              Données d’image (<code>VP8</code>, <code>VP8L</code>, <code>ALPH</code>), en-tête étendu
+              (<code>VP8X</code>), animation (<code>ANIM</code>, <code>ANMF</code>), profil de couleur ICC
+              (<code>ICCP</code>)
+            </td>
+            <td>
+              <code>EXIF</code>, <code>XMP </code>, <code>C2PA</code>, tout bloc inconnu (y compris dans les images
+              d’une animation), octets au-delà de la taille annoncée. Les indicateurs d’en-tête et la taille du fichier
+              sont recalculés
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Une seule chose est réécrite exprès&nbsp;: quand une photo de téléphone est enregistrée couchée et que l’EXIF
+      indique de la tourner, PromptWipe écrit un nouveau bloc EXIF de 32&nbsp;octets qui ne contient que l’orientation,
+      pour que la photo reste dans le bon sens. Si le fichier avait une carte de gain HDR, l’image peut ensuite paraître
+      moins lumineuse sur un écran HDR&nbsp;; si c’était une Motion Photo, la courte vidéo disparaît. Le rapport le dit
+      quand c’est le cas.
+    </p>
+
+    <h2>Pourquoi ne pas redessiner l’image dans un canvas&nbsp;?</h2>
+    <p>
+      Beaucoup d’outils en ligne dessinent l’image dans un canvas puis exportent un nouveau fichier. Un JPEG est alors
+      recompressé (perte de qualité), les couleurs étendues comme le Display P3 sont ramenées au sRGB, et seule la
+      première image d’une animation est gardée. Recopier les blocs évite ces trois défauts, et le format ne change
+      jamais&nbsp;: un PNG reste un PNG, un JPEG reste un JPEG.
+    </p>
+
+    <h2>Qu’est-ce qui est vérifié avant le téléchargement&nbsp;?</h2>
+    <p>
+      Le fichier nettoyé n’est proposé qu’après deux contrôles&nbsp;: il est relu et ne doit contenir aucun bloc de
+      métadonnées, puis votre navigateur le décode ainsi que l’original, et les deux doivent avoir les mêmes dimensions.
+      Au moindre doute, rien n’est proposé et votre image n’est pas modifiée.
+    </p>
+    <ul>
+      <li>Les fichiers de plus de 50&nbsp;Mo sont refusés avant même d’être lus.</li>
+      <li>
+        Une structure inattendue arrête le traitement, avec une explication. De même pour un bloc PNG critique inconnu,
+        c’est-à-dire un bloc qu’un décodeur doit comprendre pour dessiner l’image.
+      </li>
+      <li>
+        Les images de plus de 40&nbsp;mégapixels ne sont pas décodées, pour ménager la mémoire du navigateur&nbsp;: seule
+        la structure est vérifiée, et la page le signale. C’est aussi le cas quand votre navigateur ne sait pas afficher
+        l’original.
+      </li>
+      <li>
+        Une image à la fois&nbsp;: déposer un nouveau fichier remplace celui en cours, dont le résultat est ignoré.
+      </li>
+    </ul>
+
+    <h2>Que montre le rapport&nbsp;?</h2>
+    <p>
+      Avant tout téléchargement, PromptWipe montre ce que contient votre image, puis ce qui a été retiré et ce qui a été
+      gardé.
+    </p>
+    <ul>
+      <li>Les blocs texte, comme le prompt et les réglages, avec l’outil qui écrit d’habitude chacun d’eux.</li>
+      <li>Les champs EXIF&nbsp;: appareil, logiciel, date, et la position GPS quand il y en a une.</li>
+      <li>
+        Le XMP&nbsp;: l’outil créateur et le type de source déclaré (par exemple «&nbsp;Créée par IA générative&nbsp;»).
+      </li>
+      <li>
+        Le C2PA&nbsp;: le nombre de manifestes, ainsi que le générateur et le signataire qu’ils déclarent. PromptWipe ne
+        vérifie pas la signature.
+      </li>
+      <li>Ce qui est gardé&nbsp;: l’image, l’animation, le profil de couleur avec son nom, l’orientation.</li>
+    </ul>
+    <p>
+      Les valeurs lues dans un fichier ne sont pas fiables. Elles sont toujours affichées comme du texte brut, jamais
+      interprétées comme du HTML. Les valeurs très longues sont coupées à 20&nbsp;000&nbsp;caractères à l’écran&nbsp;; le
+      bouton Copier copie le texte complet.
+    </p>
+
+    <h2>Comment vérifier que rien n’est envoyé&nbsp;?</h2>
+    <p>Inutile de nous croire sur parole. Quatre vérifications prennent quelques minutes&nbsp;:</p>
+    <ol>
+      <li>
+        <strong>L’onglet Réseau.</strong> Ouvrez les outils de développement du navigateur (F12, ou Cmd+Option+I sur
+        Mac), allez dans Réseau, puis déposez une image. Le traitement n’ajoute aucune requête vers un serveur.
+        Les seules nouvelles entrées sont des adresses <code>blob:</code>, des copies gardées dans la mémoire du
+        navigateur pour l’aperçu et le téléchargement.
+      </li>
+      <li>
+        <strong>Les en-têtes de réponse.</strong> Dans le même onglet, cliquez sur la page elle-même et lisez son
+        en-tête <code>Content-Security-Policy</code>. Il contient <code>connect-src 'none'</code>&nbsp;: le navigateur
+        bloque toute connexion qu’un script de la page tenterait d’ouvrir
+        (<a href="https://developer.mozilla.org/fr/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/connect-src">MDN&nbsp;: connect-src</a>).
+        Il interdit aussi les scripts venus d’autres sites et l’envoi de formulaires.
+      </li>
+      <li>
+        <strong>Hors ligne.</strong> Chargez la page, passez en mode avion, puis déposez une image. Tout fonctionne
+        encore&nbsp;: l’outil est chargé avec la page et n’a besoin de rien d’autre.
+      </li>
+      <li>
+        <strong>Le code source.</strong> Le code est ouvert, sous licence MIT, sur <a href={LINKS.repo}>GitHub</a>. Ses
+        tests échouent si le code du site contient un appel réseau.
+      </li>
+    </ol>
+
+    <h2>Que contient le diagnostic&nbsp;?</h2>
+    <p>
+      En cas de problème, le résultat propose un bouton «&nbsp;Copier le diagnostic&nbsp;». Le diagnostic ne décrit que
+      la structure du fichier&nbsp;: format, taille, dimensions, et la liste des blocs avec leur position, leur nom,
+      leur taille et ce qui en a été fait. Il ne contient jamais une valeur du fichier, un texte, une position ni le nom
+      du fichier. Collez-le dans un <a href={LINKS.bugReport}>signalement de problème</a>&nbsp;: nous pourrons
+      reproduire le souci sans voir votre image.
+    </p>
+
+    <h2>Quelles sont les limites&nbsp;?</h2>
+    <ul>
+      <li>
+        Les filigranes invisibles inscrits dans les pixels, comme SynthID, restent. Les marques visibles aussi.
+        PromptWipe ne rend pas une image indétectable comme image générée par IA.
+      </li>
+      <li>
+        PNG, JPEG et WebP seulement. AVIF, HEIC et GIF sont refusés pour l’instant, avec un lien pour
+        <a href={LINKS.discussions}>demander le format</a>.
+      </li>
+      <li>Une image à la fois.</li>
+    </ul>
+    <p>Pour nettoyer une image tout de suite, revenez à l’<a href="/fr/">outil</a>.</p>
+  </div>
+</Base>
